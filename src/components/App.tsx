@@ -760,7 +760,7 @@ export default function App() {
                   <div className="bg-black/50 rounded-lg p-4 text-sm border border-white/5 flex flex-col sm:flex-row items-center gap-4">
                     {payMethod === "transfer" ? (
                       <div className="w-full">
-                        <div className="font-mono text-white mb-1">BCA &middot; 1234567890</div>
+                        <div className="font-mono text-white mb-1">BCA &middot; 34230213450</div>
                         <div className="text-white/60">a.n. Yayasan LPMI</div>
                         <button type="button" onClick={copyRek} className="mt-3 text-xs flex items-center gap-1 font-medium text-white/80 hover:text-white transition-colors">
                           <Copy size={12} /> {copied ? "Tersalin!" : "Salin Rekening"}
