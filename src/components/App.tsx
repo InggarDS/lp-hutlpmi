@@ -455,6 +455,10 @@ export default function App() {
   const [posterSubmitted, setPosterSubmitted] = useState(false);
   const [posterSubmitting, setPosterSubmitting] = useState(false);
   const [buktiFile, setBuktiFile] = useState("");
+  const [buktiFilePreview, setBuktiFilePreview] = useState("");
+  const [buktiFileUrl, setBuktiFileUrl] = useState("");
+  const [uploadingBukti, setUploadingBukti] = useState(false);
+  const [buktiUploadError, setBuktiUploadError] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -544,10 +548,36 @@ export default function App() {
     }
   };
 
+  const handleBuktiFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBuktiFile(file.name);
+    setBuktiFilePreview(URL.createObjectURL(file));
+    setBuktiFileUrl("");
+    setBuktiUploadError("");
+    setUploadingBukti(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setBuktiFileUrl(data.url);
+      } else {
+        setBuktiUploadError("Gagal mengunggah bukti transfer");
+      }
+    } catch {
+      setBuktiUploadError("Gagal mengunggah bukti transfer");
+    } finally {
+      setUploadingBukti(false);
+    }
+  };
+
   const submitPoster = async (e) => {
     e.preventDefault();
     if (!posterNama.trim() || posterSubmitting) return;
     if (customUpload && (!customFileUrl || uploadingFile)) return;
+    if (!buktiFileUrl || uploadingBukti) return;
     setPosterSubmitting(true);
     try {
       await fetch("/api/poster", {
@@ -560,12 +590,14 @@ export default function App() {
           paket: selectedPkg,
           metodeBayar: payMethod,
           warna: posterWarna,
+          buktiTransfer: buktiFileUrl,
         }),
       });
       setPosterSubmitted(true);
       setTimeout(() => {
         setPosterSubmitted(false);
         setPosterNama(""); setPosterPesan(""); setCustomFile(""); setCustomFilePreview(""); setCustomFileUrl(""); setCustomUpload(false); setPosterWarna(POSTER_WARNA_OPTIONS[0]);
+        setBuktiFile(""); setBuktiFilePreview(""); setBuktiFileUrl("");
       }, 5000);
     } finally {
       setPosterSubmitting(false);
@@ -847,11 +879,30 @@ export default function App() {
                   </div>
                 </div>
 
+                <div className="mb-8">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Bukti Transfer</label>
+                  <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                    {buktiFilePreview ? (
+                      <img src={buktiFilePreview} alt="Bukti transfer" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <Upload size={20} className="text-white/40" />
+                        <span className="text-sm text-white/60">Unggah bukti transfer (JPG/PNG/WEBP)</span>
+                      </>
+                    )}
+                    {uploadingBukti && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
+                    )}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleBuktiFileChange} required />
+                  </label>
+                  {buktiUploadError && <div className="text-xs text-red-400 mt-2">{buktiUploadError}</div>}
+                </div>
+
                 {uploadError && <div className="text-xs text-red-400 mb-3">{uploadError}</div>}
 
-                <button type="submit" disabled={posterSubmitting || uploadingFile || (customUpload && !customFileUrl)}
+                <button type="submit" disabled={posterSubmitting || uploadingFile || uploadingBukti || !buktiFileUrl || (customUpload && !customFileUrl)}
                   className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-lg px-6 py-4 transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
-                  {uploadingFile ? "Mengunggah Gambar..." : "Kirim & Ajukan Verifikasi"}
+                  {uploadingFile || uploadingBukti ? "Mengunggah..." : "Kirim & Ajukan Verifikasi"}
                 </button>
               </form>
             ) : (

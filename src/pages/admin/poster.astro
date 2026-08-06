@@ -26,9 +26,14 @@ const submissions = await client
       th { color: #999; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
       .status-pending { color: #e5c158; }
       .status-approved { color: #6fcf97; }
+      .status-declined { color: #f26363; }
       td img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; display: block; }
+      .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
       button { cursor: pointer; border: 1px solid #444; background: #1a1a1a; color: #eee; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; }
       button:hover { background: #2a2a2a; }
+      button.decline-btn:hover { border-color: #f26363; color: #f26363; }
+      button.delete-btn:hover { border-color: #f26363; background: #f26363; color: #0a0a0a; }
+      button:disabled { opacity: 0.5; cursor: default; }
     </style>
   </head>
   <body>
@@ -40,6 +45,7 @@ const submissions = await client
           <th>Paket</th>
           <th>Pesan / File</th>
           <th>Metode Bayar</th>
+          <th>Bukti Transfer</th>
           <th>Status</th>
           <th>Tanggal</th>
           <th></th>
@@ -58,36 +64,69 @@ const submissions = await client
               )}
             </td>
             <td>{s.metodeBayar}</td>
+            <td>
+              {s.buktiTransfer ? (
+                <a href={s.buktiTransfer} target="_blank" rel="noopener noreferrer">
+                  <img src={s.buktiTransfer} alt={`Bukti transfer ${s.nama}`} />
+                </a>
+              ) : "-"}
+            </td>
             <td class={`status-${s.status}`}>{s.status}</td>
             <td>{new Date(s.createdAt).toLocaleString("id-ID")}</td>
             <td>
-              {s.status === "pending" && (
-                <button class="approve-btn">Approve</button>
-              )}
+              <div class="actions">
+                {s.status === "pending" && (
+                  <>
+                    <button class="approve-btn">Approve</button>
+                    <button class="decline-btn">Decline</button>
+                  </>
+                )}
+                <button class="delete-btn">Delete</button>
+              </div>
             </td>
           </tr>
         ))}
       </tbody>
     </table>
     <script>
-      document.querySelectorAll(".approve-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const row = btn.closest("tr");
-          const id = row?.getAttribute("data-id");
-          if (!id) return;
-          btn.setAttribute("disabled", "true");
-          const res = await fetch(`/api/poster/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: "approved" }),
+      function withRowId(selector, handler) {
+        document.querySelectorAll(selector).forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const row = btn.closest("tr");
+            const id = row?.getAttribute("data-id");
+            if (id) handler(btn as HTMLButtonElement, id);
           });
-          if (res.ok) {
-            location.reload();
-          } else {
-            btn.removeAttribute("disabled");
-            alert("Gagal mengubah status");
-          }
         });
+      }
+
+      async function setStatus(btn: HTMLButtonElement, id: string, status: string) {
+        btn.setAttribute("disabled", "true");
+        const res = await fetch(`/api/poster/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          btn.removeAttribute("disabled");
+          alert("Gagal mengubah status");
+        }
+      }
+
+      withRowId(".approve-btn", (btn, id) => setStatus(btn, id, "approved"));
+      withRowId(".decline-btn", (btn, id) => setStatus(btn, id, "declined"));
+
+      withRowId(".delete-btn", async (btn, id) => {
+        if (!confirm("Hapus pengajuan ini secara permanen?")) return;
+        btn.setAttribute("disabled", "true");
+        const res = await fetch(`/api/poster/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          location.reload();
+        } else {
+          btn.removeAttribute("disabled");
+          alert("Gagal menghapus");
+        }
       });
     </script>
   </body>

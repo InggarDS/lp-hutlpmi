@@ -32,9 +32,10 @@ export const POST: APIRoute = async ({ request }) => {
   const paket = String(body.paket ?? "").trim();
   const metodeBayar = String(body.metodeBayar ?? "").trim();
   const warna = String(body.warna ?? "").trim();
+  const buktiTransfer = String(body.buktiTransfer ?? "").trim();
 
-  if (!nama || !paket) {
-    return new Response(JSON.stringify({ error: "nama and paket are required" }), {
+  if (!nama || !paket || !buktiTransfer) {
+    return new Response(JSON.stringify({ error: "nama, paket, and buktiTransfer are required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
@@ -47,6 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
     paket,
     metodeBayar,
     warna: VALID_WARNA.includes(warna) ? warna : VALID_WARNA[0],
+    buktiTransfer,
     status: "pending",
     createdAt: new Date(),
   };
