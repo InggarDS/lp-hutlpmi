@@ -457,6 +457,7 @@ export default function App() {
   const [nama, setNama] = useState("");
   const [asal, setAsal] = useState("");
   const [teks, setTeks] = useState("");
+  const [submittingUcapan, setSubmittingUcapan] = useState(false);
 
   const [selectedPkg, setSelectedPkg] = useState("gold");
   const [payMethod, setPayMethod] = useState("transfer");
@@ -465,8 +466,20 @@ export default function App() {
   const [customUpload, setCustomUpload] = useState(false);
   const [customFile, setCustomFile] = useState("");
   const [posterSubmitted, setPosterSubmitted] = useState(false);
+  const [posterSubmitting, setPosterSubmitting] = useState(false);
   const [buktiFile, setBuktiFile] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/ucapan")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((saved) => {
+        if (Array.isArray(saved) && saved.length > 0) {
+          setUcapanList([...saved, ...initialUcapan]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [posterIndex, setPosterIndex] = useState(0);
   useEffect(() => {
@@ -475,17 +488,44 @@ export default function App() {
   }, []);
   const activePoster = posterUcapan[posterIndex];
 
-  const submitUcapan = (e) => {
+  const submitUcapan = async (e) => {
     e.preventDefault();
-    if (!nama.trim() || !teks.trim()) return;
-    setUcapanList([{ nama, asal, teks }, ...ucapanList]);
-    setNama(""); setAsal(""); setTeks("");
+    if (!nama.trim() || !teks.trim() || submittingUcapan) return;
+    setSubmittingUcapan(true);
+    try {
+      const res = await fetch("/api/ucapan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama, asal, teks }),
+      });
+      const saved = res.ok ? await res.json() : { nama, asal, teks };
+      setUcapanList([saved, ...ucapanList]);
+      setNama(""); setAsal(""); setTeks("");
+    } finally {
+      setSubmittingUcapan(false);
+    }
   };
 
-  const submitPoster = (e) => {
+  const submitPoster = async (e) => {
     e.preventDefault();
-    if (!posterNama.trim()) return;
-    setPosterSubmitted(true);
+    if (!posterNama.trim() || posterSubmitting) return;
+    setPosterSubmitting(true);
+    try {
+      await fetch("/api/poster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: posterNama,
+          pesan: customUpload ? "" : posterPesan,
+          customFile: customUpload ? customFile : "",
+          paket: selectedPkg,
+          metodeBayar: payMethod,
+        }),
+      });
+      setPosterSubmitted(true);
+    } finally {
+      setPosterSubmitting(false);
+    }
   };
 
   const copyRek = () => {
