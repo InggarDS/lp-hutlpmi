@@ -921,8 +921,8 @@ export default function App() {
              </motion.div>
              <motion.div {...fadeUp(0.3)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
                <MapPin size={28} className="text-[hsl(var(--primary))] mb-2" />
-               <div className="font-medium text-lg">Hotel Aryaduta</div>
-               <div className="text-sm text-muted-foreground">Jakarta Pusat</div>
+               <div className="font-medium text-lg">Hotel Aryaduta Menteng</div>
+               <div className="text-sm text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
              </motion.div>
           </div>
 
