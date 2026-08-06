@@ -1,0 +1,94 @@
+---
+export const prerender = false;
+
+import clientPromise from "../../lib/mongodb";
+
+const client = await clientPromise;
+const submissions = await client
+  .db("lpmi_hut58")
+  .collection("poster")
+  .find({})
+  .sort({ createdAt: -1 })
+  .toArray();
+---
+
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin &middot; Poster Submissions</title>
+    <style>
+      body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #eee; margin: 0; padding: 2rem; }
+      h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+      th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid #2a2a2a; vertical-align: top; }
+      th { color: #999; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
+      .status-pending { color: #e5c158; }
+      .status-approved { color: #6fcf97; }
+      td img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; display: block; }
+      button { cursor: pointer; border: 1px solid #444; background: #1a1a1a; color: #eee; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+      button:hover { background: #2a2a2a; }
+    </style>
+  </head>
+  <body>
+    <h1>Poster Submissions</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>Paket</th>
+          <th>Pesan / File</th>
+          <th>Metode Bayar</th>
+          <th>Status</th>
+          <th>Tanggal</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {submissions.map((s) => (
+          <tr data-id={s._id.toString()}>
+            <td>{s.nama}</td>
+            <td>{s.paket}</td>
+            <td>
+              {s.customFile && s.customFile.startsWith("http") ? (
+                <img src={s.customFile} alt={s.nama} />
+              ) : (
+                s.pesan || s.customFile || "-"
+              )}
+            </td>
+            <td>{s.metodeBayar}</td>
+            <td class={`status-${s.status}`}>{s.status}</td>
+            <td>{new Date(s.createdAt).toLocaleString("id-ID")}</td>
+            <td>
+              {s.status === "pending" && (
+                <button class="approve-btn">Approve</button>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <script>
+      document.querySelectorAll(".approve-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const row = btn.closest("tr");
+          const id = row?.getAttribute("data-id");
+          if (!id) return;
+          btn.setAttribute("disabled", "true");
+          const res = await fetch(`/api/poster/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "approved" }),
+          });
+          if (res.ok) {
+            location.reload();
+          } else {
+            btn.removeAttribute("disabled");
+            alert("Gagal mengubah status");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

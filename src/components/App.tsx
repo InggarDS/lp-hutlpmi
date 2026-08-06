@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import {
   Calendar, MapPin, Heart, Upload, Check, ChevronRight, Copy, QrCode,
   Landmark, Sparkles, Quote, Image as ImageIcon, ArrowRight
@@ -104,28 +104,6 @@ const GlobalStyles = () => (
     }
     .timeline-line {
       background: linear-gradient(to bottom, hsl(var(--primary)) 0%, transparent 100%);
-    }
-
-    /* Shining border animation, only while an element with a border class is active (hover/focus) */
-    @keyframes border-shine {
-      0%, 100% {
-        box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3), 0 0 6px 0 hsl(var(--primary) / 0.15);
-      }
-      50% {
-        box-shadow: 0 0 0 1px hsl(var(--primary) / 0.8), 0 0 16px 2px hsl(var(--primary) / 0.45);
-      }
-    }
-    [class*="border"]:hover,
-    [class*="border"]:focus-visible,
-    [class*="border"]:focus-within {
-      animation: border-shine 1.4s ease-in-out infinite;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      [class*="border"]:hover,
-      [class*="border"]:focus-visible,
-      [class*="border"]:focus-within {
-        animation: none;
-      }
     }
 
     /* Greeting wall masonry cards */
@@ -439,16 +417,20 @@ const galeriFoto = [
 ];
 
 const posterUcapan = [
-  { nama: "GKJ Bogor", pesan: "Selamat 58 tahun berkarya bagi generasi muda Indonesia. Tuhan Yesus memberkati!", warna: "var(--card)" },
-  { nama: "GKI Kebayoran", pesan: "Kiranya LPMI terus menjadi terang di kampus-kampus Indonesia. Selamat HUT ke-58!", warna: "var(--muted)" },
-  { nama: "Kel. Hartono", pesan: "Terima kasih LPMI sudah membentuk iman anak kami. Selamat ulang tahun!", warna: "var(--card)" },
-  { nama: "Alumni 1998", pesan: "26 tahun berlalu, nilai-nilai LPMI masih kami bawa. Selamat 58 tahun!", warna: "var(--muted)" },
+  { nama: "GKJ Bogor", pesan: "Selamat 58 tahun berkarya bagi generasi muda Indonesia. Tuhan Yesus memberkati!", warna: "var(--card)", paket: "silver" },
+  { nama: "GKI Kebayoran", pesan: "Kiranya LPMI terus menjadi terang di kampus-kampus Indonesia. Selamat HUT ke-58!", warna: "var(--muted)", paket: "gold" },
+  { nama: "Kel. Hartono", pesan: "Terima kasih LPMI sudah membentuk iman anak kami. Selamat ulang tahun!", warna: "var(--card)", paket: "platinum" },
+  { nama: "Alumni 1998", pesan: "26 tahun berlalu, nilai-nilai LPMI masih kami bawa. Selamat 58 tahun!", warna: "var(--muted)", paket: "gold" },
 ];
 
+const PAKET_DURATION_MS = { silver: 3000, gold: 7000, platinum: 12000 };
+
+const POSTER_WARNA_OPTIONS = ["#E5C158", "#5B7FA6", "#4C9A76", "#C77D8F", "#8E7CC3"];
+
 const packages = [
-  { id: "silver", nama: "Silver", harga: "Rp 250.000", benefit: ["Poster tayang di website selama 1 bulan"] },
-  { id: "gold", nama: "Gold", harga: "Rp 500.000", benefit: ["Poster tayang di website selama 1 bulan", "Tayang di LED saat acara di Hotel Aryaduta"] },
-  { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", benefit: ["Poster tayang di website 1 bulan", "Tayang di LED acara", "Posisi utama & durasi lebih lama"] },
+  { id: "silver", nama: "Silver", harga: "Rp 250.000", warna: "#C0C4CC", benefit: ["Poster tayang di website selama 1 bulan"] },
+  { id: "gold", nama: "Gold", harga: "Rp 500.000", warna: "#E5C158", benefit: ["Poster tayang di website selama 1 bulan", "Tayang di LED saat acara di Hotel Aryaduta"] },
+  { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", warna: "#B8C6D9", benefit: ["Poster tayang di website 1 bulan", "Tayang di LED acara", "Posisi utama & durasi lebih lama"] },
 ];
 
 // --- MAIN APP ---
@@ -465,6 +447,11 @@ export default function App() {
   const [posterPesan, setPosterPesan] = useState("");
   const [customUpload, setCustomUpload] = useState(false);
   const [customFile, setCustomFile] = useState("");
+  const [customFilePreview, setCustomFilePreview] = useState("");
+  const [customFileUrl, setCustomFileUrl] = useState("");
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [posterWarna, setPosterWarna] = useState(POSTER_WARNA_OPTIONS[0]);
   const [posterSubmitted, setPosterSubmitted] = useState(false);
   const [posterSubmitting, setPosterSubmitting] = useState(false);
   const [buktiFile, setBuktiFile] = useState("");
@@ -481,12 +468,38 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  const [liveDisplayItems, setLiveDisplayItems] = useState(posterUcapan);
+  useEffect(() => {
+    fetch("/api/poster?status=approved")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((approved) => {
+        if (Array.isArray(approved) && approved.length > 0) {
+          const pkgColor = Object.fromEntries(packages.map((p) => [p.id, p.warna]));
+          const isImageUrl = (v) => typeof v === "string" && v.startsWith("http");
+          setLiveDisplayItems(
+            approved.map((s) => ({
+              nama: s.nama,
+              pesan: isImageUrl(s.customFile) ? "" : s.pesan || s.customFile || "",
+              gambar: isImageUrl(s.customFile) ? s.customFile : "",
+              warna: s.warna || pkgColor[s.paket] || "var(--card)",
+              paket: s.paket,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [posterIndex, setPosterIndex] = useState(0);
   useEffect(() => {
-    const timer = setInterval(() => setPosterIndex((i) => (i + 1) % posterUcapan.length), 5000);
-    return () => clearInterval(timer);
-  }, []);
-  const activePoster = posterUcapan[posterIndex];
+    setPosterIndex(0);
+  }, [liveDisplayItems]);
+  const activePoster = liveDisplayItems[posterIndex];
+  useEffect(() => {
+    const duration = PAKET_DURATION_MS[activePoster?.paket] || 5000;
+    const timer = setTimeout(() => setPosterIndex((i) => (i + 1) % liveDisplayItems.length), duration);
+    return () => clearTimeout(timer);
+  }, [posterIndex, liveDisplayItems]);
 
   const submitUcapan = async (e) => {
     e.preventDefault();
@@ -506,9 +519,35 @@ export default function App() {
     }
   };
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCustomFile(file.name);
+    setCustomFilePreview(URL.createObjectURL(file));
+    setCustomFileUrl("");
+    setUploadError("");
+    setUploadingFile(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomFileUrl(data.url);
+      } else {
+        setUploadError("Gagal mengunggah gambar");
+      }
+    } catch {
+      setUploadError("Gagal mengunggah gambar");
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const submitPoster = async (e) => {
     e.preventDefault();
     if (!posterNama.trim() || posterSubmitting) return;
+    if (customUpload && (!customFileUrl || uploadingFile)) return;
     setPosterSubmitting(true);
     try {
       await fetch("/api/poster", {
@@ -517,12 +556,17 @@ export default function App() {
         body: JSON.stringify({
           nama: posterNama,
           pesan: customUpload ? "" : posterPesan,
-          customFile: customUpload ? customFile : "",
+          customFile: customUpload ? customFileUrl : "",
           paket: selectedPkg,
           metodeBayar: payMethod,
+          warna: posterWarna,
         }),
       });
       setPosterSubmitted(true);
+      setTimeout(() => {
+        setPosterSubmitted(false);
+        setPosterNama(""); setPosterPesan(""); setCustomFile(""); setCustomFilePreview(""); setCustomFileUrl(""); setCustomUpload(false); setPosterWarna(POSTER_WARNA_OPTIONS[0]);
+      }, 5000);
     } finally {
       setPosterSubmitting(false);
     }
@@ -701,17 +745,18 @@ export default function App() {
           <motion.div {...fadeUp(0.2)} className="flex flex-col gap-4">
             {packages.map((p) => (
               <button key={p.id} onClick={() => setSelectedPkg(p.id)}
-                className={`text-left rounded-2xl p-6 border transition-all ${selectedPkg === p.id ? 'bg-[hsl(var(--primary))/0.1] border-[hsl(var(--primary))]' : 'bg-transparent border-white/10 hover:border-white/20'}`}
+                style={{ backgroundColor: `${p.warna}59`, borderColor: selectedPkg === p.id ? p.warna : `${p.warna}80` }}
+                className="text-left rounded-2xl p-6 border transition-all hover:border-opacity-80"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`font-semibold text-lg ${selectedPkg === p.id ? 'text-[hsl(var(--primary))]' : ''}`}>{p.nama}</span>
-                  {selectedPkg === p.id && <Check size={18} className="text-[hsl(var(--primary))]" />}
+                  <span className="font-semibold text-lg" style={{ color: p.warna }}>{p.nama}</span>
+                  {selectedPkg === p.id && <Check size={18} style={{ color: p.warna }} />}
                 </div>
                 <div className="font-serif italic text-xl mb-4 text-white/70">{p.harga}</div>
                 <ul className="space-y-2">
                   {p.benefit.map((b, i) => (
                     <li key={i} className="text-xs text-muted-foreground flex gap-2 items-start">
-                      <ChevronRight size={14} className="shrink-0 mt-0.5 text-[hsl(var(--primary))]" /> {b}
+                      <ChevronRight size={14} className="shrink-0 mt-0.5" style={{ color: p.warna }} /> {b}
                     </li>
                   ))}
                 </ul>
@@ -738,10 +783,19 @@ export default function App() {
                   </div>
                   
                   {customUpload ? (
-                    <label className="w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors">
-                      <Upload size={20} className="text-white/40" />
-                      <span className="text-sm text-white/60">{customFile || "Format JPG/PNG (4:5)"}</span>
-                      <input type="file" className="hidden" onChange={(e) => setCustomFile(e.target.files?.[0]?.name || "")} />
+                    <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                      {customFilePreview ? (
+                        <img src={customFilePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <>
+                          <Upload size={20} className="text-white/40" />
+                          <span className="text-sm text-white/60">Format JPG/PNG/WEBP (4:5)</span>
+                        </>
+                      )}
+                      {uploadingFile && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
+                      )}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
                     </label>
                   ) : (
                     <textarea value={posterPesan} onChange={(e) => setPosterPesan(e.target.value)} rows={3}
@@ -750,14 +804,32 @@ export default function App() {
                   )}
                 </div>
 
+                <div className="mb-6">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Warna Kartu</label>
+                  <div className="flex gap-3">
+                    {POSTER_WARNA_OPTIONS.map((warna) => (
+                      <button
+                        key={warna}
+                        type="button"
+                        onClick={() => setPosterWarna(warna)}
+                        aria-label={`Pilih warna ${warna}`}
+                        className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                        style={{ backgroundColor: warna, outline: posterWarna === warna ? "2px solid white" : "2px solid transparent", outlineOffset: "2px" }}
+                      >
+                        {posterWarna === warna && <Check size={16} className="text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="mb-8">
                   <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Pembayaran</label>
                    <div className="flex gap-2 mb-4">
                     <button type="button" onClick={() => setPayMethod("transfer")} className={`flex-1 py-2 text-sm flex items-center justify-center gap-2 rounded-lg border transition-colors ${payMethod === "transfer" ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}><Landmark size={14} /> Transfer</button>
-                    <button type="button" onClick={() => setPayMethod("qris")} className={`flex-1 py-2 text-sm flex items-center justify-center gap-2 rounded-lg border transition-colors ${payMethod === "qris" ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}><QrCode size={14} /> QRIS</button>
+                    <button type="button" onClick={() => setPayMethod("qris")} className={`flex-1 py-2 text-sm flex items-center justify-center gap-2 rounded-lg border transition-colors ${payMethod === "qris" ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}><QrCode size={32} /> QRIS</button>
                   </div>
 
-                  <div className="bg-black/50 rounded-lg p-4 text-sm border border-white/5 flex flex-col sm:flex-row items-center gap-4">
+                  <div className={`bg-black/50 rounded-lg p-4 text-sm border border-white/5 flex items-center gap-4 ${payMethod === "transfer" ? "flex-col sm:flex-row" : "flex-col"}`}>
                     {payMethod === "transfer" ? (
                       <div className="w-full">
                         <div className="font-mono text-white mb-1">BCA &middot; 34230213450</div>
@@ -768,17 +840,18 @@ export default function App() {
                       </div>
                     ) : (
                        <>
-                        <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shrink-0">
-                          <QrCode size={40} className="text-black" />
-                        </div>
-                        <div className="text-white/60 text-xs leading-relaxed">Pindai QRIS ini menggunakan aplikasi bank/e-wallet pilihan Anda.</div>
+                        <div className="text-white/60 text-xs leading-relaxed text-center">Pindai QRIS ini menggunakan aplikasi bank/e-wallet pilihan Anda.</div>
+                        <img src="/images/qris.jpeg" alt="QRIS Jesus Film Project, Digital & Kreatif" className="w-56 sm:w-64 h-auto rounded-lg shrink-0" />
                       </>
                     )}
                   </div>
                 </div>
 
-                <button type="submit" className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-lg px-6 py-4 transition-opacity hover:opacity-90">
-                  Kirim & Ajukan Verifikasi
+                {uploadError && <div className="text-xs text-red-400 mb-3">{uploadError}</div>}
+
+                <button type="submit" disabled={posterSubmitting || uploadingFile || (customUpload && !customFileUrl)}
+                  className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-lg px-6 py-4 transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
+                  {uploadingFile ? "Mengunggah Gambar..." : "Kirim & Ajukan Verifikasi"}
                 </button>
               </form>
             ) : (
@@ -801,11 +874,33 @@ export default function App() {
         <div className="text-center z-10 px-4 w-full max-w-4xl">
           <SectionLabel>Sedang Tayang</SectionLabel>
            
-           <div className="relative mx-auto mt-12 w-full max-w-xl aspect-[4/3] rounded-3xl overflow-hidden liquid-glass flex flex-col items-center justify-center p-8 text-center border-2 border-[hsl(var(--primary))/0.3]" 
-                style={{ backgroundColor: activePoster.warna, transition: 'background-color 0.8s ease' }}>
-             <Sparkles size={24} className="text-[hsl(var(--primary))] mb-6" />
-             <p className="font-serif italic text-2xl md:text-3xl leading-snug text-white mb-8">"{activePoster.pesan}"</p>
-             <div className="text-xs uppercase tracking-[3px] text-white/60">{activePoster.nama}</div>
+           <div className="relative mx-auto mt-12 w-full max-w-xl aspect-[4/3] rounded-3xl overflow-hidden liquid-glass border-2 border-[hsl(var(--primary))/0.3]">
+             <AnimatePresence mode="wait">
+               <motion.div
+                 key={posterIndex}
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 transition={{ duration: 0.8, ease: "easeInOut" }}
+                 className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center"
+                 style={{ backgroundColor: activePoster.warna }}
+               >
+                 {activePoster.gambar ? (
+                   <>
+                     <img src={activePoster.gambar} alt={activePoster.nama} className="w-full h-full absolute inset-0 object-cover" />
+                     <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                       <div className="text-xs uppercase tracking-[3px] text-white/90">{activePoster.nama}</div>
+                     </div>
+                   </>
+                 ) : (
+                   <>
+                     <Sparkles size={24} className="text-[hsl(var(--primary))] mb-6" />
+                     <p className="font-serif italic text-2xl md:text-3xl leading-snug text-white mb-8">"{activePoster.pesan}"</p>
+                     <div className="text-xs uppercase tracking-[3px] text-white/60">{activePoster.nama}</div>
+                   </>
+                 )}
+               </motion.div>
+             </AnimatePresence>
            </div>
         </div>
       </section>
@@ -822,7 +917,7 @@ export default function App() {
              <motion.div {...fadeUp(0.2)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
                <Calendar size={28} className="text-[hsl(var(--primary))] mb-2" />
                <div className="font-medium text-lg">30 Agustus 2026</div>
-               <div className="text-sm text-muted-foreground">Pukul 18.00 WIB</div>
+               <div className="text-sm text-muted-foreground">Jam 17.00 -20.00 WIB</div>
              </motion.div>
              <motion.div {...fadeUp(0.3)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
                <MapPin size={28} className="text-[hsl(var(--primary))] mb-2" />
