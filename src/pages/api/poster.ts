@@ -4,7 +4,6 @@ import clientPromise from "../../lib/mongodb";
 export const prerender = false;
 
 const DB_NAME = "lpmi_hut58";
-const VALID_WARNA = ["#E5C158", "#5B7FA6", "#4C9A76", "#C77D8F", "#8E7CC3"];
 
 export const GET: APIRoute = async ({ url }) => {
   const status = url.searchParams.get("status");
@@ -31,7 +30,6 @@ export const POST: APIRoute = async ({ request }) => {
   const customFile = String(body.customFile ?? "").trim();
   const paket = String(body.paket ?? "").trim();
   const metodeBayar = String(body.metodeBayar ?? "").trim();
-  const warna = String(body.warna ?? "").trim();
   const buktiTransfer = String(body.buktiTransfer ?? "").trim();
 
   if (!nama || !paket || !buktiTransfer) {
@@ -47,7 +45,6 @@ export const POST: APIRoute = async ({ request }) => {
     customFile: customFile || null,
     paket,
     metodeBayar,
-    warna: VALID_WARNA.includes(warna) ? warna : VALID_WARNA[0],
     buktiTransfer,
     status: "pending",
     createdAt: new Date(),

@@ -1,0 +1,151 @@
+---
+export const prerender = false;
+
+import clientPromise from "../../lib/mongodb";
+
+const client = await clientPromise;
+const items = await client
+  .db("lpmi_hut58")
+  .collection("galeri")
+  .find({})
+  .sort({ createdAt: -1 })
+  .toArray();
+---
+
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin &middot; Momen Pelayanan</title>
+    <style>
+      body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #eee; margin: 0; padding: 2rem; }
+      h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+      p.hint { color: #999; font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+      form.upload { max-width: 480px; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 3rem; }
+      label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
+      input[type="text"] { background: #1a1a1a; border: 1px solid #333; color: #eee; border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+      .dropzone { position: relative; height: 140px; border: 2px dashed #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; overflow: hidden; color: #888; font-size: 0.85rem; }
+      .dropzone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .dropzone input { display: none; }
+      .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.8rem; }
+
+      button { cursor: pointer; border: 1px solid #444; background: #1a1a1a; color: #eee; border-radius: 6px; padding: 0.6rem 1rem; font-size: 0.85rem; }
+      button:hover { background: #2a2a2a; }
+      button:disabled { opacity: 0.5; cursor: default; }
+      button[type="submit"] { background: #e5c158; color: #1a1a1a; border: none; font-weight: 600; }
+      button[type="submit"]:hover { opacity: 0.9; background: #e5c158; }
+      .error { color: #f26363; font-size: 0.85rem; }
+
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+      .card { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 4/3; background: #111; }
+      .card img { width: 100%; height: 100%; object-fit: cover; }
+      .card .caption { position: absolute; inset-inline: 0; bottom: 0; padding: 0.5rem 0.6rem; background: linear-gradient(to top, rgba(0,0,0,0.85), transparent); font-size: 0.75rem; }
+      .card .delete-btn { position: absolute; top: 0.4rem; right: 0.4rem; padding: 0.3rem 0.5rem; font-size: 0.7rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Momen Pelayanan</h1>
+    <p class="hint">Foto &amp; deskripsi di sini tayang di section "Momen Pelayanan" pada halaman utama.</p>
+
+    <form class="upload" id="upload-form">
+      <div>
+        <label>Foto</label>
+        <label class="dropzone" id="dropzone">
+          <span id="dropzone-text">Klik untuk pilih foto (JPG/PNG/WEBP)</span>
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" />
+        </label>
+      </div>
+      <div>
+        <label>Deskripsi</label>
+        <input type="text" id="caption-input" placeholder="cth. Retret pemimpin mahasiswa" required />
+      </div>
+      <div class="error" id="form-error"></div>
+      <button type="submit" id="submit-btn">Unggah</button>
+    </form>
+
+    <div class="grid">
+      {items.map((item) => (
+        <div class="card" data-id={item._id.toString()}>
+          <img src={item.src} alt={item.caption} />
+          <div class="caption">{item.caption}</div>
+          <button class="delete-btn">Hapus</button>
+        </div>
+      ))}
+    </div>
+
+    <script>
+      let uploadedUrl = "";
+      const dropzone = document.getElementById("dropzone")!;
+      const dropzoneText = document.getElementById("dropzone-text")!;
+      const fileInput = document.getElementById("file-input") as HTMLInputElement;
+      const captionInput = document.getElementById("caption-input") as HTMLInputElement;
+      const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+      const formError = document.getElementById("form-error")!;
+
+      fileInput.addEventListener("change", async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        uploadedUrl = "";
+        formError.textContent = "";
+        dropzoneText.textContent = "Mengunggah...";
+
+        const existingImg = dropzone.querySelector("img");
+        if (existingImg) existingImg.remove();
+        const preview = document.createElement("img");
+        preview.src = URL.createObjectURL(file);
+        dropzone.appendChild(preview);
+
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (res.ok) {
+          const data = await res.json();
+          uploadedUrl = data.url;
+          dropzoneText.textContent = "";
+        } else {
+          formError.textContent = "Gagal mengunggah foto";
+          dropzoneText.textContent = "Klik untuk pilih foto (JPG/PNG/WEBP)";
+        }
+      });
+
+      document.getElementById("upload-form")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        formError.textContent = "";
+        if (!uploadedUrl) {
+          formError.textContent = "Unggah foto terlebih dahulu";
+          return;
+        }
+        submitBtn.setAttribute("disabled", "true");
+        const res = await fetch("/api/galeri", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ src: uploadedUrl, caption: captionInput.value }),
+        });
+        if (res.ok) {
+          location.reload();
+        } else {
+          formError.textContent = "Gagal menyimpan";
+          submitBtn.removeAttribute("disabled");
+        }
+      });
+
+      document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const card = btn.closest(".card");
+          const id = card?.getAttribute("data-id");
+          if (!id || !confirm("Hapus foto ini?")) return;
+          (btn as HTMLButtonElement).setAttribute("disabled", "true");
+          const res = await fetch(`/api/galeri/${id}`, { method: "DELETE" });
+          if (res.ok) {
+            location.reload();
+          } else {
+            (btn as HTMLButtonElement).removeAttribute("disabled");
+            alert("Gagal menghapus");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

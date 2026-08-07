@@ -145,6 +145,29 @@ const GlobalStyles = () => (
         animation: none;
       }
     }
+
+    /* Package card shine sweep, only while selected */
+    @keyframes pkg-shine-sweep {
+      0% { transform: translateX(-140%) rotate(20deg); }
+      100% { transform: translateX(240%) rotate(20deg); }
+    }
+    .pkg-shine::after {
+      content: '';
+      position: absolute;
+      top: -60%;
+      left: 0;
+      width: 25%;
+      height: 220%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+      animation: pkg-shine-sweep 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pkg-shine::after {
+        animation: none;
+        display: none;
+      }
+    }
   `}</style>
 );
 
@@ -311,6 +334,19 @@ const splitIntoColumns = (items: any[], count: number) => {
 
 // Auto-scroll only kicks in once the wall has enough cards to loop meaningfully.
 const AUTO_SCROLL_THRESHOLD = 20;
+const MOBILE_AUTO_SCROLL_THRESHOLD = 3;
+
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return isMobile;
+};
 
 const MarqueeColumn = ({ items, direction = "up", duration = 32, animate = true, className = "" }: { items: any[]; direction?: "up" | "down"; duration?: number; animate?: boolean; className?: string }) => {
   const shouldReduceMotion = useReducedMotion();
@@ -335,8 +371,11 @@ const MarqueeColumn = ({ items, direction = "up", duration = 32, animate = true,
 };
 
 const ScrollingUcapanWall = ({ items }: { items: any[] }) => {
-  const columns = splitIntoColumns(items, 4);
-  const animate = items.length > AUTO_SCROLL_THRESHOLD;
+  const isMobile = useIsMobile();
+  const columns = isMobile ? [items, [], [], []] : splitIntoColumns(items, 4);
+  const animate = isMobile
+    ? items.length >= MOBILE_AUTO_SCROLL_THRESHOLD
+    : items.length > AUTO_SCROLL_THRESHOLD;
 
   return (
     <div className={`relative w-full ${animate ? "h-[560px] md:h-[640px]" : ""}`}>
@@ -416,26 +455,210 @@ const galeriFoto = [
   { src: "https://picsum.photos/seed/lpmi6/600/450", caption: "Persekutuan lintas kampus" },
 ];
 
-const posterUcapan = [
-  { nama: "GKJ Bogor", pesan: "Selamat 58 tahun berkarya bagi generasi muda Indonesia. Tuhan Yesus memberkati!", warna: "var(--card)", paket: "silver" },
-  { nama: "GKI Kebayoran", pesan: "Kiranya LPMI terus menjadi terang di kampus-kampus Indonesia. Selamat HUT ke-58!", warna: "var(--muted)", paket: "gold" },
-  { nama: "Kel. Hartono", pesan: "Terima kasih LPMI sudah membentuk iman anak kami. Selamat ulang tahun!", warna: "var(--card)", paket: "platinum" },
-  { nama: "Alumni 1998", pesan: "26 tahun berlalu, nilai-nilai LPMI masih kami bawa. Selamat 58 tahun!", warna: "var(--muted)", paket: "gold" },
-];
+// --- GREETING WALL (Live Display) ---
+const TIER_DURATION_MS = { platinum: 10000, gold: 7000, silver: 3000 };
+const TIER_RANK = { platinum: 0, gold: 1, silver: 2 };
+const TIER_ACCENT = { silver: "#6B7280", gold: "#A9770E", platinum: "#3D6A96" };
+const TIER_LABEL = { silver: "Silver", gold: "Gold", platinum: "Platinum" };
+const POLL_INTERVAL_MS = 7000;
 
-const PAKET_DURATION_MS = { silver: 3000, gold: 7000, platinum: 12000 };
+const hexToRgba = (hex, alpha) => {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
-const POSTER_WARNA_OPTIONS = ["#E5C158", "#5B7FA6", "#4C9A76", "#C77D8F", "#8E7CC3"];
+const isImageUrl = (v) => typeof v === "string" && v.startsWith("http");
+
+const normalizeGreeting = (s) => ({
+  _id: s._id,
+  nama: s.nama,
+  pesan: s.pesan || "",
+  gambar: isImageUrl(s.customFile) ? s.customFile : "",
+  paket: TIER_RANK[s.paket] !== undefined ? s.paket : "silver",
+  createdAt: s.createdAt,
+});
+
+const sortGreetingQueue = (items) =>
+  [...items].sort((a, b) => {
+    const rankDiff = TIER_RANK[a.paket] - TIER_RANK[b.paket];
+    if (rankDiff !== 0) return rankDiff;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+
+const TierBadge = ({ paket }) => {
+  const accent = TIER_ACCENT[paket] || TIER_ACCENT.silver;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[2px] shrink-0"
+      style={{ backgroundColor: hexToRgba(accent, 0.12), color: accent, border: `1px solid ${hexToRgba(accent, 0.35)}` }}
+    >
+      <Sparkles size={10} /> {TIER_LABEL[paket] || "Silver"}
+    </span>
+  );
+};
+
+const GreetingCard = React.memo(function GreetingCard({ item }) {
+  const textLight = { color: "#f5f5f5" };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="absolute inset-0 flex flex-col items-center justify-center text-center gap-4 p-6"
+    >
+      <motion.div
+        className="flex flex-col items-center gap-4 max-w-full max-h-full"
+        animate={{ scale: [1, 1.015, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        {item.gambar && (
+          <img
+            src={item.gambar}
+            alt={item.nama}
+            loading="lazy"
+            className="max-w-full max-h-48 sm:max-h-64 md:max-h-72 w-auto h-auto object-contain rounded-xl"
+          />
+        )}
+        {!item.gambar && <Quote size={26} style={{ color: "rgba(245,245,245,0.35)" }} />}
+        {item.pesan && (
+          <p className="font-serif italic text-xl md:text-2xl leading-snug" style={textLight}>&ldquo;{item.pesan}&rdquo;</p>
+        )}
+        <div className="flex items-center gap-2 flex-wrap justify-center">
+          <span className="font-semibold text-[15px]" style={textLight}>{item.nama}</span>
+          <TierBadge paket={item.paket} />
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+});
+
+const GreetingEmptyState = () => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.6 }}
+    className="absolute inset-0 rounded-[28px] overflow-hidden flex items-center justify-center liquid-glass border-2 border-[hsl(var(--primary))/0.2]"
+  >
+    <motion.div
+      className="absolute inset-0"
+      style={{
+        background: "linear-gradient(120deg, rgba(229,193,88,0.14), rgba(142,124,195,0.14), rgba(76,154,118,0.14))",
+        backgroundSize: "200% 200%",
+      }}
+      animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+      transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+    />
+    {Array.from({ length: 8 }).map((_, i) => (
+      <motion.span
+        key={i}
+        className="absolute w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))]"
+        style={{ left: `${(i * 47) % 100}%`, top: `${(i * 31) % 100}%` }}
+        animate={{ y: [0, -16, 0], opacity: [0.15, 0.6, 0.15] }}
+        transition={{ duration: 4 + (i % 3), repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+      />
+    ))}
+    <motion.div
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      className="relative z-10 flex flex-col items-center gap-3 text-center px-8"
+    >
+      <Sparkles size={28} className="text-[hsl(var(--primary))]" />
+      <p className="text-white/70 text-sm uppercase tracking-[3px]">Waiting for new greetings...</p>
+    </motion.div>
+  </motion.div>
+);
+
+function GreetingWall() {
+  const [display, setDisplay] = useState(null);
+  const queueRef = useRef([]);
+  const lastIdRef = useRef(null);
+  const timerRef = useRef(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    const advance = () => {
+      if (!mountedRef.current) return;
+      const q = queueRef.current;
+      if (q.length === 0) {
+        setDisplay(null);
+        timerRef.current = setTimeout(advance, 4000);
+        return;
+      }
+      let nextIdx = 0;
+      if (lastIdRef.current) {
+        const idx = q.findIndex((it) => it._id === lastIdRef.current);
+        nextIdx = idx === -1 ? 0 : (idx + 1) % q.length;
+      }
+      const item = q[nextIdx];
+      lastIdRef.current = item._id;
+      setDisplay(item);
+      const duration = TIER_DURATION_MS[item.paket] || 5000;
+      timerRef.current = setTimeout(advance, duration);
+    };
+
+    const refreshQueue = async () => {
+      try {
+        const res = await fetch("/api/poster?status=approved");
+        if (!res.ok) return;
+        const raw = await res.json();
+        if (Array.isArray(raw)) {
+          queueRef.current = sortGreetingQueue(raw.map(normalizeGreeting));
+        }
+      } catch {}
+    };
+
+    (async () => {
+      await refreshQueue();
+      advance();
+    })();
+
+    const poll = setInterval(refreshQueue, POLL_INTERVAL_MS);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(poll);
+      clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  return (
+    <div className="relative mx-auto mt-8 lg:mt-12 w-full max-w-2xl min-h-[320px] sm:min-h-[420px] md:min-h-[460px]">
+      <AnimatePresence mode="wait">
+        {display ? (
+          <GreetingCard key={display._id} item={display} />
+        ) : (
+          <GreetingEmptyState key="empty" />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 const packages = [
-  { id: "silver", nama: "Silver", harga: "Rp 250.000", warna: "#C0C4CC", benefit: ["Poster tayang di website selama 1 bulan"] },
-  { id: "gold", nama: "Gold", harga: "Rp 500.000", warna: "#E5C158", benefit: ["Poster tayang di website selama 1 bulan", "Tayang di LED saat acara di Hotel Aryaduta"] },
-  { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", warna: "#B8C6D9", benefit: ["Poster tayang di website 1 bulan", "Tayang di LED acara", "Posisi utama & durasi lebih lama"] },
+  { id: "silver", nama: "Silver", harga: "Rp 250.000", warna: "#C0C4CC", teks: "#3F4550", benefit: ["Poster tayang di website selama 1 bulan"] },
+  { id: "gold", nama: "Gold", harga: "Rp 500.000", warna: "#E5C158", teks: "#6B4E0A", benefit: ["Poster tayang di website selama 1 bulan", "Tayang di LED saat acara di Hotel Aryaduta"] },
+  { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", warna: "#B8C6D9", teks: "#294159", benefit: ["Poster tayang di website 1 bulan", "Tayang di LED acara", "Posisi utama & durasi lebih lama"] },
 ];
 
 // --- MAIN APP ---
 export default function App() {
   const [ucapanList, setUcapanList] = useState(initialUcapan);
+  const [galeriList, setGaleriList] = useState(galeriFoto);
+  useEffect(() => {
+    fetch("/api/galeri")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((saved) => {
+        if (Array.isArray(saved) && saved.length > 0) {
+          setGaleriList(saved.map((g) => ({ src: g.src, caption: g.caption })));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [nama, setNama] = useState("");
   const [asal, setAsal] = useState("");
   const [teks, setTeks] = useState("");
@@ -445,14 +668,13 @@ export default function App() {
   const [payMethod, setPayMethod] = useState("transfer");
   const [posterNama, setPosterNama] = useState("");
   const [posterPesan, setPosterPesan] = useState("");
-  const [customUpload, setCustomUpload] = useState(false);
   const [customFile, setCustomFile] = useState("");
   const [customFilePreview, setCustomFilePreview] = useState("");
   const [customFileUrl, setCustomFileUrl] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [posterWarna, setPosterWarna] = useState(POSTER_WARNA_OPTIONS[0]);
   const [posterSubmitted, setPosterSubmitted] = useState(false);
+  const [submittedInfo, setSubmittedInfo] = useState({ nama: "", paket: "" });
   const [posterSubmitting, setPosterSubmitting] = useState(false);
   const [buktiFile, setBuktiFile] = useState("");
   const [buktiFilePreview, setBuktiFilePreview] = useState("");
@@ -471,39 +693,6 @@ export default function App() {
       })
       .catch(() => {});
   }, []);
-
-  const [liveDisplayItems, setLiveDisplayItems] = useState(posterUcapan);
-  useEffect(() => {
-    fetch("/api/poster?status=approved")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((approved) => {
-        if (Array.isArray(approved) && approved.length > 0) {
-          const pkgColor = Object.fromEntries(packages.map((p) => [p.id, p.warna]));
-          const isImageUrl = (v) => typeof v === "string" && v.startsWith("http");
-          setLiveDisplayItems(
-            approved.map((s) => ({
-              nama: s.nama,
-              pesan: isImageUrl(s.customFile) ? "" : s.pesan || s.customFile || "",
-              gambar: isImageUrl(s.customFile) ? s.customFile : "",
-              warna: s.warna || pkgColor[s.paket] || "var(--card)",
-              paket: s.paket,
-            }))
-          );
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const [posterIndex, setPosterIndex] = useState(0);
-  useEffect(() => {
-    setPosterIndex(0);
-  }, [liveDisplayItems]);
-  const activePoster = liveDisplayItems[posterIndex];
-  useEffect(() => {
-    const duration = PAKET_DURATION_MS[activePoster?.paket] || 5000;
-    const timer = setTimeout(() => setPosterIndex((i) => (i + 1) % liveDisplayItems.length), duration);
-    return () => clearTimeout(timer);
-  }, [posterIndex, liveDisplayItems]);
 
   const submitUcapan = async (e) => {
     e.preventDefault();
@@ -576,7 +765,8 @@ export default function App() {
   const submitPoster = async (e) => {
     e.preventDefault();
     if (!posterNama.trim() || posterSubmitting) return;
-    if (customUpload && (!customFileUrl || uploadingFile)) return;
+    if (!posterPesan.trim() && !customFileUrl) return;
+    if (uploadingFile) return;
     if (!buktiFileUrl || uploadingBukti) return;
     setPosterSubmitting(true);
     try {
@@ -585,20 +775,18 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nama: posterNama,
-          pesan: customUpload ? "" : posterPesan,
-          customFile: customUpload ? customFileUrl : "",
+          pesan: posterPesan,
+          customFile: customFileUrl,
           paket: selectedPkg,
           metodeBayar: payMethod,
-          warna: posterWarna,
           buktiTransfer: buktiFileUrl,
         }),
       });
+      setSubmittedInfo({ nama: posterNama, paket: packages.find((p) => p.id === selectedPkg)?.nama || "" });
       setPosterSubmitted(true);
-      setTimeout(() => {
-        setPosterSubmitted(false);
-        setPosterNama(""); setPosterPesan(""); setCustomFile(""); setCustomFilePreview(""); setCustomFileUrl(""); setCustomUpload(false); setPosterWarna(POSTER_WARNA_OPTIONS[0]);
-        setBuktiFile(""); setBuktiFilePreview(""); setBuktiFileUrl("");
-      }, 5000);
+      setPosterNama(""); setPosterPesan(""); setCustomFile(""); setCustomFilePreview(""); setCustomFileUrl("");
+      setBuktiFile(""); setBuktiFilePreview(""); setBuktiFileUrl("");
+      setTimeout(() => setPosterSubmitted(false), 5000);
     } finally {
       setPosterSubmitting(false);
     }
@@ -629,7 +817,7 @@ export default function App() {
       </nav>
 
       {/* 2. Hero Section */}
-      <section className="relative w-full h-screen min-h-[700px] flex items-center justify-center overflow-hidden">
+      <section className="relative w-full min-h-screen py-28 lg:py-0 flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 w-full h-full z-0">
           <HLSVideo src="https://stream.mux.com/8wrHPCX2dC3msyYU9ObwqNdm00u3ViXvOSHUMRYSEe5Q.m3u8" className="w-full h-full object-cover opacity-30" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
@@ -640,27 +828,34 @@ export default function App() {
           <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[hsl(var(--background))] to-transparent" />
         </div>
 
-        <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-4xl w-full">
-          <motion.div {...fadeUp(0)} className="flex items-center justify-center gap-2 mb-6">
-            <span className="text-xs uppercase tracking-widest text-[hsl(var(--primary))]">30 Agustus 2026</span>
-          </motion.div>
+        <div className="relative z-10 w-full max-w-7xl px-4 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 sm:gap-12 lg:gap-8 items-center">
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+            <motion.div {...fadeUp(0)} className="flex items-center justify-center lg:justify-start gap-2 mb-4 sm:mb-6">
+              <span className="text-xs uppercase tracking-widest text-[hsl(var(--primary))]">30 Agustus 2026</span>
+            </motion.div>
 
-          <motion.h1 {...fadeUp(0.1)} className="text-5xl md:text-7xl lg:text-8xl font-medium tracking-[-2px] leading-tight mb-6">
-            Allah Berkarya Melalui <br/><span className="font-serif italic font-normal text-[hsl(var(--primary))]">Setiap Generasi</span>
-          </motion.h1>
+            <motion.h1 {...fadeUp(0.1)} className="text-4xl sm:text-5xl md:text-7xl lg:text-6xl xl:text-7xl font-medium tracking-[-1px] sm:tracking-[-2px] leading-[1.1] sm:leading-tight mb-4 sm:mb-6">
+              Allah Berkarya Melalui <br/><span className="font-serif italic font-normal text-[hsl(var(--primary))]">Setiap Generasi</span>
+            </motion.h1>
 
-          <motion.p {...fadeUp(0.2)} className="text-lg text-hero-subtitle max-w-2xl mx-auto mb-12 leading-relaxed">
-            Bersama Bp. David Robbins, President CCC International, sebagai tamu kehormatan. 
-            Bergabunglah merayakan 58 tahun kesetiaan Tuhan dalam pelayanan mahasiswa.
-          </motion.p>
+            <motion.p {...fadeUp(0.2)} className="text-base sm:text-lg text-hero-subtitle max-w-2xl mx-auto lg:mx-0 mb-8 sm:mb-12 leading-relaxed">
+              Bersama Bp. David Robbins, President CCC International, sebagai tamu kehormatan.
+              Bergabunglah merayakan 58 tahun kesetiaan Tuhan dalam pelayanan mahasiswa.
+            </motion.p>
 
-          <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row items-center gap-4">
-            <a href="#poster" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold rounded-full px-8 py-3.5 flex items-center gap-2 hover:opacity-90 transition-opacity">
-              <Heart size={18} /> Kirim Poster Ucapan
-            </a>
-            <a href="#acara" className="liquid-glass text-foreground font-medium rounded-full px-8 py-3.5 flex items-center gap-2 hover:bg-white/5 transition-colors border border-[hsl(var(--primary))/0.3]">
-              <Calendar size={18} className="text-[hsl(var(--primary))]" /> Info Acara
-            </a>
+            <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row items-center gap-4">
+              <a href="#poster" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold rounded-full px-8 py-3.5 flex items-center gap-2 hover:opacity-90 transition-opacity">
+                <Heart size={18} /> Kirim Poster Ucapan
+              </a>
+              <a href="#acara" className="liquid-glass text-foreground font-medium rounded-full px-8 py-3.5 flex items-center gap-2 hover:bg-white/5 transition-colors border border-[hsl(var(--primary))/0.3]">
+                <Calendar size={18} className="text-[hsl(var(--primary))]" /> Info Acara
+              </a>
+            </motion.div>
+          </div>
+
+          <motion.div {...fadeUp(0.4)} className="w-full flex flex-col items-center lg:items-stretch">
+            <SectionLabel>Greetings Wall (Live)</SectionLabel>
+            <GreetingWall />
           </motion.div>
         </div>
       </section>
@@ -777,18 +972,24 @@ export default function App() {
           <motion.div {...fadeUp(0.2)} className="flex flex-col gap-4">
             {packages.map((p) => (
               <button key={p.id} onClick={() => setSelectedPkg(p.id)}
-                style={{ backgroundColor: `${p.warna}59`, borderColor: selectedPkg === p.id ? p.warna : `${p.warna}80` }}
-                className="text-left rounded-2xl p-6 border transition-all hover:border-opacity-80"
+                style={{
+                  background: `linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0) 60%), linear-gradient(135deg, ${p.warna}E6, ${p.warna}80)`,
+                  borderColor: selectedPkg === p.id ? p.warna : `${p.warna}80`,
+                  boxShadow: selectedPkg === p.id
+                    ? `inset 0 1px 1px rgba(255,255,255,0.7), inset 0 -10px 20px -12px rgba(0,0,0,0.35), 0 0 0 3px ${p.warna}40, 0 12px 32px -8px ${p.warna}CC`
+                    : `inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -8px 16px -12px rgba(0,0,0,0.3)`,
+                }}
+                className={`relative overflow-hidden text-left rounded-2xl p-6 border transition-all hover:border-opacity-80 ${selectedPkg === p.id ? "pkg-shine" : ""}`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-lg" style={{ color: p.warna }}>{p.nama}</span>
-                  {selectedPkg === p.id && <Check size={18} style={{ color: p.warna }} />}
+                  <span className="font-bold text-lg" style={{ color: p.teks }}>{p.nama}</span>
+                  {selectedPkg === p.id && <Check size={18} style={{ color: p.teks }} />}
                 </div>
-                <div className="font-serif italic text-xl mb-4 text-white/70">{p.harga}</div>
+                <div className="font-serif italic text-xl mb-4" style={{ color: p.teks }}>{p.harga}</div>
                 <ul className="space-y-2">
                   {p.benefit.map((b, i) => (
-                    <li key={i} className="text-xs text-muted-foreground flex gap-2 items-start">
-                      <ChevronRight size={14} className="shrink-0 mt-0.5" style={{ color: p.warna }} /> {b}
+                    <li key={i} className="text-xs font-medium flex gap-2 items-start" style={{ color: p.teks }}>
+                      <ChevronRight size={14} className="shrink-0 mt-0.5" style={{ color: p.teks }} /> {b}
                     </li>
                   ))}
                 </ul>
@@ -798,7 +999,6 @@ export default function App() {
 
           {/* Form */}
           <motion.div {...fadeUp(0.3)}>
-            {!posterSubmitted ? (
                <form onSubmit={submitPoster} className="bg-card border border-white/10 rounded-3xl p-8">
                 <div className="mb-6">
                   <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Nama / Gereja Mitra</label>
@@ -808,51 +1008,29 @@ export default function App() {
                 </div>
 
                 <div className="mb-6">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Pesan Singkat / Desain</label>
-                  <div className="flex gap-4 mb-4">
-                    <button type="button" onClick={() => setCustomUpload(false)} className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${!customUpload ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}>Teks</button>
-                    <button type="button" onClick={() => setCustomUpload(true)} className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${customUpload ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}>Unggah Gambar</button>
-                  </div>
-                  
-                  {customUpload ? (
-                    <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
-                      {customFilePreview ? (
-                        <img src={customFilePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
-                      ) : (
-                        <>
-                          <Upload size={20} className="text-white/40" />
-                          <span className="text-sm text-white/60">Format JPG/PNG/WEBP (4:5)</span>
-                        </>
-                      )}
-                      {uploadingFile && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
-                      )}
-                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
-                    </label>
-                  ) : (
-                    <textarea value={posterPesan} onChange={(e) => setPosterPesan(e.target.value)} rows={3}
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-[hsl(var(--primary))] text-white"
-                      placeholder="Ucapan yang akan tampil..." />
-                  )}
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Poster Ucapan Anda</label>
+                  <p className="text-xs text-white/40 mb-3">Ini yang akan tayang di layar &amp; website — tulis ucapan, unggah gambar, atau keduanya.</p>
+
+                  <textarea value={posterPesan} onChange={(e) => setPosterPesan(e.target.value)} rows={3}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-[hsl(var(--primary))] text-white mb-3"
+                    placeholder="Ucapan yang akan tampil... (opsional jika mengunggah gambar)" />
+
+                  <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
+                    {customFilePreview ? (
+                      <img src={customFilePreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <Upload size={20} className="text-white/40" />
+                        <span className="text-sm text-white/60">Unggah gambar poster (opsional, JPG/PNG/WEBP)</span>
+                      </>
+                    )}
+                    {uploadingFile && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
+                    )}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
+                  </label>
                 </div>
 
-                <div className="mb-6">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Warna Kartu</label>
-                  <div className="flex gap-3">
-                    {POSTER_WARNA_OPTIONS.map((warna) => (
-                      <button
-                        key={warna}
-                        type="button"
-                        onClick={() => setPosterWarna(warna)}
-                        aria-label={`Pilih warna ${warna}`}
-                        className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                        style={{ backgroundColor: warna, outline: posterWarna === warna ? "2px solid white" : "2px solid transparent", outlineOffset: "2px" }}
-                      >
-                        {posterWarna === warna && <Check size={16} className="text-white" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 <div className="mb-8">
                   <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Pembayaran</label>
@@ -880,14 +1058,15 @@ export default function App() {
                 </div>
 
                 <div className="mb-8">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Bukti Transfer</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Bukti Pembayaran</label>
+                  <p className="text-xs text-white/40 mb-3">Wajib diisi untuk verifikasi panitia — bukan poster Anda, dan tidak akan tayang di layar.</p>
                   <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
                     {buktiFilePreview ? (
                       <img src={buktiFilePreview} alt="Bukti transfer" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <>
                         <Upload size={20} className="text-white/40" />
-                        <span className="text-sm text-white/60">Unggah bukti transfer (JPG/PNG/WEBP)</span>
+                        <span className="text-sm text-white/60">Unggah bukti transfer/pembayaran (JPG/PNG/WEBP)</span>
                       </>
                     )}
                     {uploadingBukti && (
@@ -900,63 +1079,16 @@ export default function App() {
 
                 {uploadError && <div className="text-xs text-red-400 mb-3">{uploadError}</div>}
 
-                <button type="submit" disabled={posterSubmitting || uploadingFile || uploadingBukti || !buktiFileUrl || (customUpload && !customFileUrl)}
+                <button type="submit" disabled={posterSubmitting || uploadingFile || uploadingBukti || !buktiFileUrl || (!posterPesan.trim() && !customFileUrl)}
                   className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-lg px-6 py-4 transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
                   {uploadingFile || uploadingBukti ? "Mengunggah..." : "Kirim & Ajukan Verifikasi"}
                 </button>
               </form>
-            ) : (
-              <div className="bg-card border border-white/10 rounded-3xl p-12 text-center flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-6">
-                  <Check size={32} className="text-foreground" />
-                </div>
-                <h3 className="text-2xl font-medium mb-2">Terima kasih, {posterNama}!</h3>
-                <p className="text-muted-foreground text-sm max-w-sm">
-                  Pengajuan paket <span className="text-white font-medium">{packages.find(p => p.id === selectedPkg)?.nama}</span> diterima. Poster akan tayang setelah diverifikasi panitia.
-                </p>
-              </div>
-            )}
           </motion.div>
         </div>
       </section>
 
-      {/* 6. Live Display (Adapting Gallery/CTA logic) */}
-      <section className="py-24 border-t border-border/30 overflow-hidden flex flex-col items-center justify-center relative">
-        <div className="text-center z-10 px-4 w-full max-w-4xl">
-          <SectionLabel>Sedang Tayang</SectionLabel>
-           
-           <div className="relative mx-auto mt-12 w-full max-w-xl aspect-[4/3] rounded-3xl overflow-hidden liquid-glass border-2 border-[hsl(var(--primary))/0.3]">
-             <AnimatePresence mode="wait">
-               <motion.div
-                 key={posterIndex}
-                 initial={{ opacity: 0 }}
-                 animate={{ opacity: 1 }}
-                 exit={{ opacity: 0 }}
-                 transition={{ duration: 0.8, ease: "easeInOut" }}
-                 className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center"
-                 style={{ backgroundColor: activePoster.warna }}
-               >
-                 {activePoster.gambar ? (
-                   <>
-                     <img src={activePoster.gambar} alt={activePoster.nama} className="w-full h-full absolute inset-0 object-cover" />
-                     <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                       <div className="text-xs uppercase tracking-[3px] text-white/90">{activePoster.nama}</div>
-                     </div>
-                   </>
-                 ) : (
-                   <>
-                     <Sparkles size={24} className="text-[hsl(var(--primary))] mb-6" />
-                     <p className="font-serif italic text-2xl md:text-3xl leading-snug text-white mb-8">"{activePoster.pesan}"</p>
-                     <div className="text-xs uppercase tracking-[3px] text-white/60">{activePoster.nama}</div>
-                   </>
-                 )}
-               </motion.div>
-             </AnimatePresence>
-           </div>
-        </div>
-      </section>
-
-      {/* 7. Galeri & Acara (CTA Section) */}
+      {/* 6. Galeri & Acara (CTA Section) */}
       <section id="acara" className="relative py-32 md:py-44 border-t border-border/30 overflow-hidden flex flex-col items-center justify-center text-center px-4 bg-background">
         <div className="relative z-10 flex flex-col items-center w-full max-w-6xl">
            <motion.div {...fadeUp(0)} className="mb-16">
@@ -980,7 +1112,7 @@ export default function App() {
           <motion.div {...fadeUp(0.4)} className="w-full">
             <h3 className="text-2xl font-medium mb-8">Momen Pelayanan</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {galeriFoto.map((f, i) => (
+              {galeriList.map((f, i) => (
                 <div key={i} className="aspect-square rounded-xl overflow-hidden relative group">
                   <img src={f.src} alt={f.caption} className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
                   <div className="absolute inset-0 flex flex-col justify-end p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -1004,6 +1136,43 @@ export default function App() {
           <a href="#" className="hover:text-[hsl(var(--foreground))] transition-colors">Contact</a>
         </div>
       </footer>
+
+      <AnimatePresence>
+        {posterSubmitted && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setPosterSubmitted(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card border border-white/10 rounded-3xl p-10 md:p-12 text-center flex flex-col items-center max-w-md w-full relative"
+            >
+              <button
+                onClick={() => setPosterSubmitted(false)}
+                aria-label="Tutup"
+                className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                <Check size={32} className="text-foreground" />
+              </div>
+              <h3 className="text-2xl font-medium mb-2">Terima kasih, {submittedInfo.nama}!</h3>
+              <p className="text-muted-foreground text-sm max-w-sm">
+                Pengajuan paket <span className="text-white font-medium">{submittedInfo.paket}</span> diterima. Poster akan tayang setelah diverifikasi panitia.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

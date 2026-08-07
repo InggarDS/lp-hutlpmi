@@ -43,7 +43,8 @@ const submissions = await client
         <tr>
           <th>Nama</th>
           <th>Paket</th>
-          <th>Pesan / File</th>
+          <th>Pesan</th>
+          <th>File</th>
           <th>Metode Bayar</th>
           <th>Bukti Transfer</th>
           <th>Status</th>
@@ -56,12 +57,13 @@ const submissions = await client
           <tr data-id={s._id.toString()}>
             <td>{s.nama}</td>
             <td>{s.paket}</td>
+            <td>{s.pesan || "-"}</td>
             <td>
               {s.customFile && s.customFile.startsWith("http") ? (
-                <img src={s.customFile} alt={s.nama} />
-              ) : (
-                s.pesan || s.customFile || "-"
-              )}
+                <a href={s.customFile} target="_blank" rel="noopener noreferrer">
+                  <img src={s.customFile} alt={s.nama} />
+                </a>
+              ) : "-"}
             </td>
             <td>{s.metodeBayar}</td>
             <td>
