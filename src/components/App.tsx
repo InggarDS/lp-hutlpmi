@@ -434,6 +434,11 @@ const timeline = [
     text: "LPMI kembali menjadi satu dalam kepemimpinan Nasional yang mengangkat Pdt. Drs. Wim Wairata sebagai Direktur Nasional. Integrasi pelayanan dilakukan dengan tidak mudah.",
   },
   {
+    year: "2020",
+    title: "Explo Digital",
+    text: "Ketika Covid-19 mengubah tatanan dunia termasuk dalam pelayanan, LPMI secara adaptif menyelenggarakan Explo Digital yang dilaksanakan secara online, live streaming, dengan kelompok-kelompok kecil di berbagai daerah di Indonesia. Lebih dari 3000 orang terhubung dalam latihan pelayanan selama 3 hari.",
+  },
+  {
     year: "2026",
     title: "HUT ke-58",
     text: "HUT ke-58 — \"Allah Berkarya Melalui Setiap Generasi.\"",
@@ -847,6 +852,22 @@ export default function App() {
             </motion.div>
           </div>
 
+          <motion.div {...fadeUp(0.35)} className="w-full lg:hidden flex flex-col items-center gap-4">
+            <h2 className="text-3xl font-serif italic text-[hsl(var(--primary))]">Puncak Perayaan</h2>
+            <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+              <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
+                <Calendar size={20} className="text-[hsl(var(--primary))] mb-1" />
+                <div className="font-medium text-sm">30 Agustus 2026</div>
+                <div className="text-xs text-muted-foreground">17.00–20.00 WIB</div>
+              </div>
+              <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
+                <MapPin size={20} className="text-[hsl(var(--primary))] mb-1" />
+                <div className="font-medium text-sm">Hotel Aryaduta Menteng</div>
+                <div className="text-xs text-muted-foreground">Jakarta</div>
+              </div>
+            </div>
+          </motion.div>
+
           <motion.div {...fadeUp(0.4)} className="w-full flex flex-col items-center lg:items-stretch">
             <SectionLabel>Greetings Wall (Live)</SectionLabel>
             <GreetingWall />
@@ -1086,7 +1107,6 @@ export default function App() {
       <section id="acara" className="relative py-32 md:py-44 border-t border-border/30 overflow-hidden flex flex-col items-center justify-center text-center px-4 bg-background">
         <div className="relative z-10 flex flex-col items-center w-full max-w-6xl">
            <motion.div {...fadeUp(0)} className="mb-16">
-             <SectionLabel>Gala Dinner</SectionLabel>
              <h2 className="text-5xl md:text-7xl font-serif italic mb-6 text-[hsl(var(--primary))]">Puncak Perayaan</h2>
           </motion.div>
 
