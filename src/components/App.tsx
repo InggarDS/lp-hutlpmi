@@ -1195,26 +1195,28 @@ export default function App() {
       {/* 6. Galeri & Acara (CTA Section) */}
       <section id="acara" className="relative py-32 md:py-44 border-t border-border/30 overflow-hidden flex flex-col items-center justify-center text-center px-4 bg-background">
         <div className="relative z-10 flex flex-col items-center w-full max-w-6xl">
-           <motion.div {...fadeUp(0)} className="mb-16">
-             <h2 className="text-5xl md:text-7xl font-serif italic mb-6 text-[hsl(var(--primary))]">Puncak Perayaan</h2>
-          </motion.div>
+          <div className="hidden lg:flex flex-col items-center w-full">
+            <motion.div {...fadeUp(0)} className="mb-16">
+              <h2 className="text-5xl md:text-7xl font-serif italic mb-6 text-[hsl(var(--primary))]">Puncak Perayaan</h2>
+            </motion.div>
 
-          <div className="grid sm:grid-cols-2 gap-8 w-full max-w-3xl mb-8">
-             <motion.div {...fadeUp(0.2)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
-               <Calendar size={28} className="text-[hsl(var(--primary))] mb-2" />
-               <div className="font-medium text-lg">30 Agustus 2026</div>
-               <div className="text-sm text-muted-foreground">Jam 17.00 -20.00 WIB</div>
-             </motion.div>
-             <motion.div {...fadeUp(0.3)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
-               <MapPin size={28} className="text-[hsl(var(--primary))] mb-2" />
-               <div className="font-medium text-lg">Hotel Aryaduta Menteng</div>
-               <div className="text-sm text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
-             </motion.div>
+            <div className="grid sm:grid-cols-2 gap-8 w-full max-w-3xl mb-8">
+              <motion.div {...fadeUp(0.2)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
+                <Calendar size={28} className="text-[hsl(var(--primary))] mb-2" />
+                <div className="font-medium text-lg">30 Agustus 2026</div>
+                <div className="text-sm text-muted-foreground">Jam 17.00 -20.00 WIB</div>
+              </motion.div>
+              <motion.div {...fadeUp(0.3)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
+                <MapPin size={28} className="text-[hsl(var(--primary))] mb-2" />
+                <div className="font-medium text-lg">Hotel Aryaduta Menteng</div>
+                <div className="text-sm text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
+              </motion.div>
+            </div>
+
+            <motion.div {...fadeUp(0.35)} className="mb-24">
+              <AddToCalendarButton />
+            </motion.div>
           </div>
-
-          <motion.div {...fadeUp(0.35)} className="mb-24">
-            <AddToCalendarButton />
-          </motion.div>
 
           <motion.div {...fadeUp(0.4)} className="w-full">
             <h3 className="text-2xl font-medium mb-8">Momen Pelayanan</h3>
