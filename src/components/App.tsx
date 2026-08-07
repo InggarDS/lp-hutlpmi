@@ -425,6 +425,7 @@ const timeline = [
     year: "1985",
     title: "EXPLO '85",
     text: "EXPLO '85 menjadi sebuah event yang menjadi tonggak kegerakan pelayanan nasional yang melatih lebih dari 5.000 mahasiswa dan pemuda dari seluruh pelosok Indonesia yang dilaksanakan di Senayan yang secara bersamaan dari berbagai negara yang direlay melalui siaran satelit.",
+    images: ["/images/sejarah-1985-1.jpeg", "/images/sejarah-1985-2.jpeg", "/images/sejarah-1985-3.jpeg"],
   },
   {
     year: "1998",
@@ -440,6 +441,7 @@ const timeline = [
     year: "2020",
     title: "Explo Digital",
     text: "Ketika Covid-19 mengubah tatanan dunia termasuk dalam pelayanan, LPMI secara adaptif menyelenggarakan Explo Digital yang dilaksanakan secara online, live streaming, dengan kelompok-kelompok kecil di berbagai daerah di Indonesia. Lebih dari 3000 orang terhubung dalam latihan pelayanan selama 3 hari.",
+    video: "https://bqevghfoqjsguker.public.blob.vercel-storage.com/sejarah/2020-pelayanan-online.mp4",
   },
   {
     year: "2026",
@@ -766,16 +768,14 @@ export default function App() {
   const [posterPesan, setPosterPesan] = useState("");
   const [customFile, setCustomFile] = useState("");
   const [customFilePreview, setCustomFilePreview] = useState("");
-  const [customFileUrl, setCustomFileUrl] = useState("");
-  const [uploadingFile, setUploadingFile] = useState(false);
+  const [customFileObj, setCustomFileObj] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [posterSubmitted, setPosterSubmitted] = useState(false);
   const [submittedInfo, setSubmittedInfo] = useState({ nama: "", paket: "" });
   const [posterSubmitting, setPosterSubmitting] = useState(false);
   const [buktiFile, setBuktiFile] = useState("");
   const [buktiFilePreview, setBuktiFilePreview] = useState("");
-  const [buktiFileUrl, setBuktiFileUrl] = useState("");
-  const [uploadingBukti, setUploadingBukti] = useState(false);
+  const [buktiFileObj, setBuktiFileObj] = useState(null);
   const [buktiUploadError, setBuktiUploadError] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -808,58 +808,61 @@ export default function App() {
     }
   };
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setCustomFile(file.name);
     setCustomFilePreview(URL.createObjectURL(file));
-    setCustomFileUrl("");
+    setCustomFileObj(file);
     setUploadError("");
-    setUploadingFile(true);
-    try {
-      const { upload } = await import("@vercel/blob/client");
-      const blob = await upload(`poster/${Date.now()}-${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
-      setCustomFileUrl(blob.url);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Gagal mengunggah gambar");
-    } finally {
-      setUploadingFile(false);
-    }
   };
 
-  const handleBuktiFileChange = async (e) => {
+  const handleBuktiFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setBuktiFile(file.name);
     setBuktiFilePreview(URL.createObjectURL(file));
-    setBuktiFileUrl("");
+    setBuktiFileObj(file);
     setBuktiUploadError("");
-    setUploadingBukti(true);
-    try {
-      const { upload } = await import("@vercel/blob/client");
-      const blob = await upload(`poster/${Date.now()}-${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
-      setBuktiFileUrl(blob.url);
-    } catch (err) {
-      setBuktiUploadError(err instanceof Error ? err.message : "Gagal mengunggah bukti transfer");
-    } finally {
-      setUploadingBukti(false);
-    }
   };
 
   const submitPoster = async (e) => {
     e.preventDefault();
     if (!posterNama.trim() || posterSubmitting) return;
-    if (!posterPesan.trim() && !customFileUrl) return;
-    if (uploadingFile) return;
-    if (!buktiFileUrl || uploadingBukti) return;
+    if (!posterPesan.trim() && !customFileObj) return;
+    if (!buktiFileObj) return;
     setPosterSubmitting(true);
+    setUploadError("");
+    setBuktiUploadError("");
     try {
+      const { upload } = await import("@vercel/blob/client");
+
+      let customFileUrl = "";
+      if (customFileObj) {
+        try {
+          const blob = await upload(`poster/${Date.now()}-${customFileObj.name}`, customFileObj, {
+            access: "public",
+            handleUploadUrl: "/api/upload",
+          });
+          customFileUrl = blob.url;
+        } catch (err) {
+          setUploadError(err instanceof Error ? err.message : "Gagal mengunggah gambar");
+          return;
+        }
+      }
+
+      let buktiFileUrl = "";
+      try {
+        const blob = await upload(`poster/${Date.now()}-${buktiFileObj.name}`, buktiFileObj, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+        });
+        buktiFileUrl = blob.url;
+      } catch (err) {
+        setBuktiUploadError(err instanceof Error ? err.message : "Gagal mengunggah bukti transfer");
+        return;
+      }
+
       await fetch("/api/poster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -874,8 +877,8 @@ export default function App() {
       });
       setSubmittedInfo({ nama: posterNama, paket: packages.find((p) => p.id === selectedPkg)?.nama || "" });
       setPosterSubmitted(true);
-      setPosterNama(""); setPosterPesan(""); setCustomFile(""); setCustomFilePreview(""); setCustomFileUrl("");
-      setBuktiFile(""); setBuktiFilePreview(""); setBuktiFileUrl("");
+      setPosterNama(""); setPosterPesan(""); setCustomFile(""); setCustomFilePreview(""); setCustomFileObj(null);
+      setBuktiFile(""); setBuktiFilePreview(""); setBuktiFileObj(null);
       setTimeout(() => setPosterSubmitted(false), 5000);
     } finally {
       setPosterSubmitting(false);
@@ -937,28 +940,25 @@ export default function App() {
               <a href="#poster" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold rounded-full px-8 py-3.5 flex items-center gap-2 hover:opacity-90 transition-opacity">
                 <Heart size={18} /> Kirim Poster Ucapan
               </a>
-              <a href="#acara" className="liquid-glass text-foreground font-medium rounded-full px-8 py-3.5 flex items-center gap-2 hover:bg-white/5 transition-colors border border-[hsl(var(--primary))/0.3]">
-                <Calendar size={18} className="text-[hsl(var(--primary))]" /> Info Acara
-              </a>
+            </motion.div>
+
+            <motion.div id="acara" {...fadeUp(0.35)} className="w-full flex flex-col items-center lg:items-start gap-4 mt-8 sm:mt-10">
+              <h2 className="text-3xl font-serif italic text-[hsl(var(--primary))]">Puncak Perayaan</h2>
+              <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+                <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
+                  <Calendar size={20} className="text-[hsl(var(--primary))] mb-1" />
+                  <div className="font-medium text-sm">30 Agustus 2026</div>
+                  <div className="text-xs text-muted-foreground">17.00–20.00 WIB</div>
+                </div>
+                <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
+                  <MapPin size={20} className="text-[hsl(var(--primary))] mb-1" />
+                  <div className="font-medium text-sm">Hotel Aryaduta Menteng</div>
+                  <div className="text-xs text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
+                </div>
+              </div>
+              <AddToCalendarButton />
             </motion.div>
           </div>
-
-          <motion.div {...fadeUp(0.35)} className="w-full lg:hidden flex flex-col items-center gap-4">
-            <h2 className="text-3xl font-serif italic text-[hsl(var(--primary))]">Puncak Perayaan</h2>
-            <div className="grid grid-cols-2 gap-3 w-full max-w-md">
-              <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
-                <Calendar size={20} className="text-[hsl(var(--primary))] mb-1" />
-                <div className="font-medium text-sm">30 Agustus 2026</div>
-                <div className="text-xs text-muted-foreground">17.00–20.00 WIB</div>
-              </div>
-              <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
-                <MapPin size={20} className="text-[hsl(var(--primary))] mb-1" />
-                <div className="font-medium text-sm">Hotel Aryaduta Menteng</div>
-                <div className="text-xs text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
-              </div>
-            </div>
-            <AddToCalendarButton />
-          </motion.div>
 
           <motion.div {...fadeUp(0.4)} className="w-full flex flex-col items-center lg:items-stretch">
             <SectionLabel>Greetings Wall (Live)</SectionLabel>
@@ -1009,38 +1009,84 @@ export default function App() {
 
               {/* Content Box */}
               <div className="pt-2 flex-1">
-                <motion.div
-                  whileHover={{ x: 10 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                  className={`liquid-glass rounded-2xl hover:bg-white/5 transition-colors duration-300 border border-[hsl(var(--primary))/0.1] overflow-hidden ${item.image ? "grid sm:grid-cols-[0.85fr_1.15fr]" : "p-6 md:p-8"}`}
-                >
-                  {item.image && (
-                    <>
-                      {/* Mobile: natural aspect ratio, not cropped */}
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="block sm:hidden w-full h-auto object-contain transition-transform duration-500 ease-out group-hover:scale-105"
-                      />
-                      {/* Desktop: fills the split-layout column height */}
-                      <div className="relative hidden sm:block w-full h-full overflow-hidden">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-transparent" />
+                {(() => {
+                  const imgs = item.images || (item.image ? [item.image] : []);
+                  const hasMedia = imgs.length > 0 || !!item.video;
+                  return (
+                    <motion.div
+                      whileHover={{ x: 10 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      className={`liquid-glass rounded-2xl hover:bg-white/5 transition-colors duration-300 border border-[hsl(var(--primary))/0.1] overflow-hidden ${hasMedia ? "grid sm:grid-cols-[0.85fr_1.15fr]" : "p-6 md:p-8"}`}
+                    >
+                      {item.video && (
+                        <>
+                          {/* Mobile: natural size video with controls */}
+                          <video
+                            src={item.video}
+                            controls
+                            preload="metadata"
+                            className="block sm:hidden w-full h-auto"
+                          />
+                          {/* Desktop: fills the split-layout column height */}
+                          <div className="relative hidden sm:block w-full h-full overflow-hidden">
+                            <video
+                              src={item.video}
+                              controls
+                              preload="metadata"
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {!item.video && imgs.length === 1 && (
+                        <>
+                          {/* Mobile: natural aspect ratio, not cropped */}
+                          <img
+                            src={imgs[0]}
+                            alt={item.title}
+                            className="block sm:hidden w-full h-auto object-contain transition-transform duration-500 ease-out group-hover:scale-105"
+                          />
+                          {/* Desktop: fills the split-layout column height */}
+                          <div className="relative hidden sm:block w-full h-full overflow-hidden">
+                            <img
+                              src={imgs[0]}
+                              alt={item.title}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-transparent" />
+                          </div>
+                        </>
+                      )}
+                      {!item.video && imgs.length > 1 && (
+                        <div className="grid grid-cols-2 gap-1 sm:h-full">
+                          <div className="col-span-2 relative aspect-[16/9] overflow-hidden">
+                            <img
+                              src={imgs[0]}
+                              alt={`${item.title} 1`}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                            />
+                          </div>
+                          {imgs.slice(1).map((src, idx) => (
+                            <div key={idx} className="relative aspect-square overflow-hidden">
+                              <img
+                                src={src}
+                                alt={`${item.title} ${idx + 2}`}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className={hasMedia ? "p-5 sm:p-6 md:p-8" : ""}>
+                        <div className={`font-serif italic text-[hsl(var(--primary))] mb-1 ${hasMedia ? "text-xl sm:text-3xl" : "text-3xl"}`}>{item.year}</div>
+                        <div className={`font-semibold uppercase tracking-wider text-foreground mb-3 ${hasMedia ? "text-xs sm:text-sm" : "text-sm"}`}>{item.title}</div>
+                        <p className={`text-muted-foreground leading-relaxed ${hasMedia ? "text-sm sm:text-base" : "text-base"}`}>
+                          {item.text}
+                        </p>
                       </div>
-                    </>
-                  )}
-                  <div className={item.image ? "p-5 sm:p-6 md:p-8" : ""}>
-                    <div className={`font-serif italic text-[hsl(var(--primary))] mb-1 ${item.image ? "text-xl sm:text-3xl" : "text-3xl"}`}>{item.year}</div>
-                    <div className={`font-semibold uppercase tracking-wider text-foreground mb-3 ${item.image ? "text-xs sm:text-sm" : "text-sm"}`}>{item.title}</div>
-                    <p className={`text-muted-foreground leading-relaxed ${item.image ? "text-sm sm:text-base" : "text-base"}`}>
-                      {item.text}
-                    </p>
-                  </div>
-                </motion.div>
+                    </motion.div>
+                  );
+                })()}
               </div>
             </motion.div>
           ))}
@@ -1152,7 +1198,7 @@ export default function App() {
                         <span className="text-sm text-white/60">Unggah gambar poster (opsional, JPG/PNG/WEBP)</span>
                       </>
                     )}
-                    {uploadingFile && (
+                    {posterSubmitting && customFileObj && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
                     )}
                     <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
@@ -1197,7 +1243,7 @@ export default function App() {
                         <span className="text-sm text-white/60">Unggah bukti transfer/pembayaran (JPG/PNG/WEBP)</span>
                       </>
                     )}
-                    {uploadingBukti && (
+                    {posterSubmitting && buktiFileObj && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
                     )}
                     <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleBuktiFileChange} required />
@@ -1207,9 +1253,9 @@ export default function App() {
 
                 {uploadError && <div className="text-xs text-red-400 mb-3">{uploadError}</div>}
 
-                <button type="submit" disabled={posterSubmitting || uploadingFile || uploadingBukti || !buktiFileUrl || (!posterPesan.trim() && !customFileUrl)}
+                <button type="submit" disabled={posterSubmitting || !buktiFileObj || (!posterPesan.trim() && !customFileObj)}
                   className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-lg px-6 py-4 transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
-                  {uploadingFile || uploadingBukti ? "Mengunggah..." : "Kirim & Ajukan Verifikasi"}
+                  {posterSubmitting ? "Mengunggah & Mengirim..." : "Kirim & Ajukan Verifikasi"}
                 </button>
               </form>
           </motion.div>
@@ -1217,31 +1263,8 @@ export default function App() {
       </section>
 
       {/* 6. Galeri & Acara (CTA Section) */}
-      <section id="acara" className="relative py-32 md:py-44 border-t border-border/30 overflow-hidden flex flex-col items-center justify-center text-center px-4 bg-background">
+      <section id="galeri" className="relative py-32 md:py-44 border-t border-border/30 overflow-hidden flex flex-col items-center justify-center text-center px-4 bg-background">
         <div className="relative z-10 flex flex-col items-center w-full max-w-6xl">
-          <div className="hidden lg:flex flex-col items-center w-full">
-            <motion.div {...fadeUp(0)} className="mb-16">
-              <h2 className="text-5xl md:text-7xl font-serif italic mb-6 text-[hsl(var(--primary))]">Puncak Perayaan</h2>
-            </motion.div>
-
-            <div className="grid sm:grid-cols-2 gap-8 w-full max-w-3xl mb-8">
-              <motion.div {...fadeUp(0.2)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
-                <Calendar size={28} className="text-[hsl(var(--primary))] mb-2" />
-                <div className="font-medium text-lg">30 Agustus 2026</div>
-                <div className="text-sm text-muted-foreground">Jam 17.00 -20.00 WIB</div>
-              </motion.div>
-              <motion.div {...fadeUp(0.3)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
-                <MapPin size={28} className="text-[hsl(var(--primary))] mb-2" />
-                <div className="font-medium text-lg">Hotel Aryaduta Menteng</div>
-                <div className="text-sm text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
-              </motion.div>
-            </div>
-
-            <motion.div {...fadeUp(0.35)} className="mb-24">
-              <AddToCalendarButton />
-            </motion.div>
-          </div>
-
           <motion.div {...fadeUp(0.4)} className="w-full">
             <h3 className="text-2xl font-medium mb-8">Momen Pelayanan</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
