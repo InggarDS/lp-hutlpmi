@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import {
   Calendar, MapPin, Heart, Upload, Check, ChevronRight, Copy, QrCode,
-  Landmark, Sparkles, Quote, Image as ImageIcon, ArrowRight
+  Landmark, Sparkles, Quote, Image as ImageIcon, ArrowRight, CalendarPlus
 } from "lucide-react";
 
 // --- GLOBAL STYLES & THEME ---
@@ -650,6 +650,94 @@ const packages = [
   { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", warna: "#B8C6D9", teks: "#294159", benefit: ["Poster tayang di website 1 bulan", "Tayang di LED acara", "Posisi utama & durasi lebih lama"] },
 ];
 
+// --- ADD TO CALENDAR ---
+const EVENT_INFO = {
+  title: "Puncak Perayaan HUT ke-58 LPMI",
+  description: "Allah Berkarya Melalui Setiap Generasi — Gala Dinner HUT ke-58 LPMI bersama Bp. David Robbins, President CCC International.",
+  location: "Hotel Aryaduta Menteng, Jl. Prajurit KKO Usman Harun 44-48 Jakarta",
+  startUTC: "20260830T100000Z",
+  endUTC: "20260830T130000Z",
+};
+
+const buildIcs = () => {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//LPMI//HUT ke-58//ID",
+    "BEGIN:VEVENT",
+    `UID:hut58-lpmi-${Date.now()}@lpmi.or.id`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${EVENT_INFO.startUTC}`,
+    `DTEND:${EVENT_INFO.endUTC}`,
+    `SUMMARY:${EVENT_INFO.title}`,
+    `DESCRIPTION:${EVENT_INFO.description}`,
+    `LOCATION:${EVENT_INFO.location}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+};
+
+const downloadIcs = () => {
+  const blob = new Blob([buildIcs()], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "HUT-58-LPMI.ics";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
+const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(EVENT_INFO.title)}&dates=${EVENT_INFO.startUTC}/${EVENT_INFO.endUTC}&details=${encodeURIComponent(EVENT_INFO.description)}&location=${encodeURIComponent(EVENT_INFO.location)}`;
+
+const AddToCalendarButton = ({ className = "" }) => {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} className={`relative inline-block ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="liquid-glass text-foreground font-medium rounded-full px-5 py-2.5 text-sm flex items-center gap-2 hover:bg-white/5 transition-colors border border-[hsl(var(--primary))/0.3]"
+      >
+        <CalendarPlus size={16} className="text-[hsl(var(--primary))]" /> Simpan ke Kalender
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-2 left-1/2 -translate-x-1/2 w-56 rounded-xl border border-white/10 bg-card shadow-2xl overflow-hidden">
+          <a
+            href={googleCalendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors"
+          >
+            Google Calendar
+          </a>
+          <button
+            type="button"
+            onClick={() => { downloadIcs(); setOpen(false); }}
+            className="block w-full px-4 py-3 text-sm text-left hover:bg-white/5 transition-colors border-t border-white/10"
+          >
+            Apple / Outlook (.ics)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // --- MAIN APP ---
 export default function App() {
   const [ucapanList, setUcapanList] = useState(initialUcapan);
@@ -866,6 +954,7 @@ export default function App() {
                 <div className="text-xs text-muted-foreground">Jakarta</div>
               </div>
             </div>
+            <AddToCalendarButton />
           </motion.div>
 
           <motion.div {...fadeUp(0.4)} className="w-full flex flex-col items-center lg:items-stretch">
@@ -1110,7 +1199,7 @@ export default function App() {
              <h2 className="text-5xl md:text-7xl font-serif italic mb-6 text-[hsl(var(--primary))]">Puncak Perayaan</h2>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 gap-8 w-full max-w-3xl mb-24">
+          <div className="grid sm:grid-cols-2 gap-8 w-full max-w-3xl mb-8">
              <motion.div {...fadeUp(0.2)} className="liquid-glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 border border-[hsl(var(--primary))/0.2]">
                <Calendar size={28} className="text-[hsl(var(--primary))] mb-2" />
                <div className="font-medium text-lg">30 Agustus 2026</div>
@@ -1122,6 +1211,10 @@ export default function App() {
                <div className="text-sm text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
              </motion.div>
           </div>
+
+          <motion.div {...fadeUp(0.35)} className="mb-24">
+            <AddToCalendarButton />
+          </motion.div>
 
           <motion.div {...fadeUp(0.4)} className="w-full">
             <h3 className="text-2xl font-medium mb-8">Momen Pelayanan</h3>
