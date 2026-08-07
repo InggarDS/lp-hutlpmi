@@ -721,17 +721,14 @@ export default function App() {
     setUploadError("");
     setUploadingFile(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (res.ok) {
-        const data = await res.json();
-        setCustomFileUrl(data.url);
-      } else {
-        setUploadError("Gagal mengunggah gambar");
-      }
-    } catch {
-      setUploadError("Gagal mengunggah gambar");
+      const { upload } = await import("@vercel/blob/client");
+      const blob = await upload(`poster/${Date.now()}-${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+      setCustomFileUrl(blob.url);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Gagal mengunggah gambar");
     } finally {
       setUploadingFile(false);
     }
@@ -746,17 +743,14 @@ export default function App() {
     setBuktiUploadError("");
     setUploadingBukti(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (res.ok) {
-        const data = await res.json();
-        setBuktiFileUrl(data.url);
-      } else {
-        setBuktiUploadError("Gagal mengunggah bukti transfer");
-      }
-    } catch {
-      setBuktiUploadError("Gagal mengunggah bukti transfer");
+      const { upload } = await import("@vercel/blob/client");
+      const blob = await upload(`poster/${Date.now()}-${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+      setBuktiFileUrl(blob.url);
+    } catch (err) {
+      setBuktiUploadError(err instanceof Error ? err.message : "Gagal mengunggah bukti transfer");
     } finally {
       setUploadingBukti(false);
     }

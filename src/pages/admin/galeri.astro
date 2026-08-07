@@ -97,15 +97,16 @@ const items = await client
         preview.src = URL.createObjectURL(file);
         dropzone.appendChild(preview);
 
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        if (res.ok) {
-          const data = await res.json();
-          uploadedUrl = data.url;
+        try {
+          const { upload } = await import("@vercel/blob/client");
+          const blob = await upload(`galeri/${Date.now()}-${file.name}`, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload",
+          });
+          uploadedUrl = blob.url;
           dropzoneText.textContent = "";
-        } else {
-          formError.textContent = "Gagal mengunggah foto";
+        } catch (err) {
+          formError.textContent = err instanceof Error ? err.message : "Gagal mengunggah foto";
           dropzoneText.textContent = "Klik untuk pilih foto (JPG/PNG/WEBP)";
         }
       });
