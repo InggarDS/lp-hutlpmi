@@ -951,7 +951,7 @@ export default function App() {
               <div className="liquid-glass rounded-xl p-4 flex flex-col items-center text-center gap-1 border border-[hsl(var(--primary))/0.2]">
                 <MapPin size={20} className="text-[hsl(var(--primary))] mb-1" />
                 <div className="font-medium text-sm">Hotel Aryaduta Menteng</div>
-                <div className="text-xs text-muted-foreground">Jakarta</div>
+                <div className="text-xs text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
               </div>
             </div>
             <AddToCalendarButton />
