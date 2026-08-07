@@ -402,16 +402,19 @@ const timeline = [
     year: "1968",
     title: "Awal Perintisan",
     text: "Pelayanan ini berawal ketika Dr. Bill Bright mengajak Pdt. Ais Pormes untuk memulai pelayanan dan menunjuknya sebagai Direktur CCCI pada tahun 1968. Pada tahun yang sama, organisasi yang bersifat interdenominasi ini didirikan oleh Dr. Ais Pormes dengan nama Lembaga Penginjilan Mahasiswa Indonesia.",
+    image: "/images/sejarah-1968.jpeg",
   },
   {
     year: "1976-1977",
     title: "I Found it - Sudah Kutemukan!",
     text: "Sebuah kampanye Kabar Baik yang telah mengangkat peran LPMI dalam misi yang melibatkan para mahasiswa dan gereja-gereja lokal.",
+    image: "/images/sejarah-1976.jpeg",
   },
   {
     year: "1977",
     title: "Reorganisasi",
     text: "Reorganisasi pelayanan dilakukan pada tahun 1976 di bawah kepemimpinan kolektif Dewan Perencana Pelayanan Nasional (DPPN). Sejak tanggal 2 Agustus 1977 berubah nama menjadi Lembaga Pelayanan Mahasiswa Indonesia dengan Pdt. Agus B. Lay sebagai Direktur.",
+    image: "/images/sejarah-1977.jpeg",
   },
   {
     year: "1981",
@@ -1006,16 +1009,37 @@ export default function App() {
 
               {/* Content Box */}
               <div className="pt-2 flex-1">
-                <motion.div 
+                <motion.div
                   whileHover={{ x: 10 }}
                   transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                  className="liquid-glass rounded-2xl p-6 md:p-8 hover:bg-white/5 transition-colors duration-300 border border-[hsl(var(--primary))/0.1]"
+                  className={`liquid-glass rounded-2xl hover:bg-white/5 transition-colors duration-300 border border-[hsl(var(--primary))/0.1] overflow-hidden ${item.image ? "grid sm:grid-cols-[0.85fr_1.15fr]" : "p-6 md:p-8"}`}
                 >
-                  <div className="font-serif italic text-3xl mb-1 text-[hsl(var(--primary))]">{item.year}</div>
-                  <div className="text-sm font-semibold uppercase tracking-wider text-foreground mb-3">{item.title}</div>
-                  <p className="text-base text-muted-foreground leading-relaxed">
-                    {item.text}
-                  </p>
+                  {item.image && (
+                    <>
+                      {/* Mobile: natural aspect ratio, not cropped */}
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="block sm:hidden w-full h-auto object-contain transition-transform duration-500 ease-out group-hover:scale-105"
+                      />
+                      {/* Desktop: fills the split-layout column height */}
+                      <div className="relative hidden sm:block w-full h-full overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-transparent" />
+                      </div>
+                    </>
+                  )}
+                  <div className={item.image ? "p-5 sm:p-6 md:p-8" : ""}>
+                    <div className={`font-serif italic text-[hsl(var(--primary))] mb-1 ${item.image ? "text-xl sm:text-3xl" : "text-3xl"}`}>{item.year}</div>
+                    <div className={`font-semibold uppercase tracking-wider text-foreground mb-3 ${item.image ? "text-xs sm:text-sm" : "text-sm"}`}>{item.title}</div>
+                    <p className={`text-muted-foreground leading-relaxed ${item.image ? "text-sm sm:text-base" : "text-base"}`}>
+                      {item.text}
+                    </p>
+                  </div>
                 </motion.div>
               </div>
             </motion.div>
