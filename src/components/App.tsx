@@ -446,7 +446,7 @@ const timeline = [
   {
     year: "2026",
     title: "HUT ke-58",
-    text: "HUT ke-58 — \"Allah Berkarya Melalui Setiap Generasi.\"",
+    text: "HUT ke-58 — \"Faithful Through Generations.\"",
   },
 ];
 
@@ -658,7 +658,7 @@ const packages = [
 // --- ADD TO CALENDAR ---
 const EVENT_INFO = {
   title: "Puncak Perayaan HUT ke-58 LPMI",
-  description: "Allah Berkarya Melalui Setiap Generasi — Gala Dinner HUT ke-58 LPMI bersama Bp. David Robbins, President CCC International.",
+  description: "Faithful Through Generations — Gala Dinner HUT ke-58 LPMI bersama Bp. David Robbins, President CCC International.",
   location: "Hotel Aryaduta Menteng, Jl. Prajurit KKO Usman Harun 44-48 Jakarta",
   startUTC: "20260830T100000Z",
   endUTC: "20260830T130000Z",
@@ -711,11 +711,11 @@ const AddToCalendarButton = ({ className = "" }) => {
   }, [open]);
 
   return (
-    <div ref={wrapRef} className={`relative inline-block ${className}`}>
+    <div ref={wrapRef} className={`relative ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="liquid-glass text-foreground font-medium rounded-full px-5 py-2.5 text-sm flex items-center gap-2 hover:bg-white/5 transition-colors border border-[hsl(var(--primary))/0.3]"
+        className="w-full liquid-glass text-foreground font-medium rounded-full px-5 py-2.5 text-sm flex items-center justify-center gap-2 hover:bg-white/5 transition-colors border border-[hsl(var(--primary))/0.3]"
       >
         <CalendarPlus size={16} className="text-[hsl(var(--primary))]" /> Simpan ke Kalender
       </button>
@@ -928,7 +928,7 @@ export default function App() {
             </motion.div>
 
             <motion.h1 {...fadeUp(0.1)} className="text-4xl sm:text-5xl md:text-7xl lg:text-6xl xl:text-7xl font-medium tracking-[-1px] sm:tracking-[-2px] leading-[1.1] sm:leading-tight mb-4 sm:mb-6">
-              Allah Berkarya Melalui <br/><span className="font-serif italic font-normal text-[hsl(var(--primary))]">Setiap Generasi</span>
+              Faithful Through <br/><span className="font-serif italic font-normal text-[hsl(var(--primary))]">Generations</span>
             </motion.h1>
 
             <motion.p {...fadeUp(0.2)} className="text-base sm:text-lg text-hero-subtitle max-w-2xl mx-auto lg:mx-0 mb-8 sm:mb-12 leading-relaxed">
@@ -936,11 +936,7 @@ export default function App() {
               Bergabunglah merayakan 58 tahun kesetiaan Tuhan dalam pelayanan mahasiswa.
             </motion.p>
 
-            <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row items-center gap-4">
-              <a href="#poster" className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold rounded-full px-8 py-3.5 flex items-center gap-2 hover:opacity-90 transition-opacity">
-                <Heart size={18} /> Kirim Poster Ucapan
-              </a>
-            </motion.div>
+           
 
             <motion.div id="acara" {...fadeUp(0.35)} className="w-full flex flex-col items-center lg:items-start gap-4 mt-8 sm:mt-10">
               <h2 className="text-3xl font-serif italic text-[hsl(var(--primary))]">Puncak Perayaan</h2>
@@ -956,7 +952,12 @@ export default function App() {
                   <div className="text-xs text-muted-foreground">Jl. Prajurit KKO Usman Harun 44-48 Jakarta</div>
                 </div>
               </div>
-              <AddToCalendarButton />
+              <div className="w-full max-w-md flex flex-col lg:flex-row items-center gap-4">
+                <AddToCalendarButton className="w-full lg:w-auto justify-center" />
+                <a href="#poster" className="w-full lg:w-auto bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold rounded-full px-8 py-3.5 flex items-center justify-center gap-2 whitespace-nowrap hover:opacity-90 transition-opacity">
+                  <Heart size={18} /> Kirim Poster Ucapan
+                </a>
+              </div>
             </motion.div>
           </div>
 
@@ -1022,17 +1023,27 @@ export default function App() {
                         <>
                           {/* Mobile: natural size video with controls */}
                           <video
+                            ref={(el) => el?.play().catch(() => {})}
                             src={item.video}
                             controls
-                            preload="metadata"
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="auto"
                             className="block sm:hidden w-full h-auto"
                           />
                           {/* Desktop: fills the split-layout column height */}
                           <div className="relative hidden sm:block w-full h-full overflow-hidden">
                             <video
+                              ref={(el) => el?.play().catch(() => {})}
                               src={item.video}
                               controls
-                              preload="metadata"
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              preload="auto"
                               className="absolute inset-0 w-full h-full object-cover"
                             />
                           </div>
@@ -1287,7 +1298,7 @@ export default function App() {
           © 2026 LPMI. Lembaga Pelayanan Mahasiswa Indonesia.
         </div>
         <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <span>panitia@lpmi.or.id</span>
+          <span>dsindo@terangindo.org</span>
           <a href="#" className="hover:text-[hsl(var(--foreground))] transition-colors">Privacy</a>
           <a href="#" className="hover:text-[hsl(var(--foreground))] transition-colors">Contact</a>
         </div>
