@@ -10,6 +10,13 @@ const submissions = await client
   .find({})
   .sort({ createdAt: -1 })
   .toArray();
+
+const ucapanList = await client
+  .db("lpmi_hut58")
+  .collection("ucapan")
+  .find({})
+  .sort({ createdAt: -1 })
+  .toArray();
 ---
 
 <html lang="id">
@@ -34,6 +41,8 @@ const submissions = await client
       button.decline-btn:hover { border-color: #f26363; color: #f26363; }
       button.delete-btn:hover { border-color: #f26363; background: #f26363; color: #0a0a0a; }
       button:disabled { opacity: 0.5; cursor: default; }
+      h1.section { margin-top: 3rem; }
+      .empty { color: #666; font-size: 0.85rem; }
     </style>
   </head>
   <body>
@@ -90,6 +99,39 @@ const submissions = await client
         ))}
       </tbody>
     </table>
+
+    <h1 class="section">Dinding Ucapan</h1>
+    {ucapanList.length === 0 ? (
+      <p class="empty">Belum ada ucapan.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Asal</th>
+            <th>Ucapan</th>
+            <th>Tanggal</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {ucapanList.map((u) => (
+            <tr data-id={u._id.toString()}>
+              <td>{u.nama}</td>
+              <td>{u.asal || "-"}</td>
+              <td>{u.teks}</td>
+              <td>{new Date(u.createdAt).toLocaleString("id-ID")}</td>
+              <td>
+                <div class="actions">
+                  <button class="delete-ucapan-btn">Delete</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
     <script>
       function withRowId(selector, handler) {
         document.querySelectorAll(selector).forEach((btn) => {
@@ -123,6 +165,18 @@ const submissions = await client
         if (!confirm("Hapus pengajuan ini secara permanen?")) return;
         btn.setAttribute("disabled", "true");
         const res = await fetch(`/api/poster/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          location.reload();
+        } else {
+          btn.removeAttribute("disabled");
+          alert("Gagal menghapus");
+        }
+      });
+
+      withRowId(".delete-ucapan-btn", async (btn, id) => {
+        if (!confirm("Hapus ucapan ini secara permanen?")) return;
+        btn.setAttribute("disabled", "true");
+        const res = await fetch(`/api/ucapan/${id}`, { method: "DELETE" });
         if (res.ok) {
           location.reload();
         } else {
