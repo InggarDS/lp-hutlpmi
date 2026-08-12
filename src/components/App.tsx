@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import {
   Calendar, MapPin, Heart, Upload, Check, ChevronRight, Copy, QrCode,
-  Landmark, Sparkles, Quote, Image as ImageIcon, ArrowRight, CalendarPlus
+  Landmark, Sparkles, Quote, Image as ImageIcon, ArrowRight, CalendarPlus,
+  CheckCircle2
 } from "lucide-react";
 
 // --- GLOBAL STYLES & THEME ---
@@ -958,6 +959,9 @@ export default function App() {
                   <Heart size={18} /> Kirim Poster Ucapan
                 </a>
               </div>
+              <a href="https://forms.gle/hUNjtkpCdQb34oZU6" target="_blank" rel="noopener noreferrer" className="w-full max-w-md border border-[hsl(var(--primary))/0.4] text-[hsl(var(--primary))] font-semibold rounded-full px-8 py-3.5 flex items-center justify-center gap-2 whitespace-nowrap hover:bg-[hsl(var(--primary))/0.1] transition-colors">
+                <CheckCircle2 size={18} /> Pastikan kehadiran dengan KLIK di sini.
+              </a>
             </motion.div>
           </div>
 
