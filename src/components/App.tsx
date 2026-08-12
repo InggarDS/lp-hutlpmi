@@ -451,12 +451,6 @@ const timeline = [
   },
 ];
 
-const initialUcapan = [
-  { nama: "Pdt. Samuel Wijaya", asal: "GKJ Bogor", teks: "Selamat ulang tahun ke-58, LPMI! Terus jadi berkat bagi generasi mahasiswa Indonesia." },
-  { nama: "Ruth A.", asal: "Alumni 2014", teks: "LPMI membentuk saya jadi pemimpin yang takut akan Tuhan. Selamat ulang tahun!" },
-  { nama: "Komisi Pemuda GKI Kebayoran", asal: "Gereja Mitra", teks: "Kiranya LPMI terus setia menjangkau kampus-kampus dengan Injil. Tuhan Yesus memberkati!" },
-];
-
 const galeriFoto = [
   { src: "https://picsum.photos/seed/lpmi1/600/450", caption: "Retret pemimpin mahasiswa" },
   { src: "https://picsum.photos/seed/lpmi2/600/450", caption: "KKR kampus tahunan" },
@@ -746,7 +740,7 @@ const AddToCalendarButton = ({ className = "" }) => {
 
 // --- MAIN APP ---
 export default function App() {
-  const [ucapanList, setUcapanList] = useState(initialUcapan);
+  const [ucapanList, setUcapanList] = useState([]);
   const [galeriList, setGaleriList] = useState(galeriFoto);
   useEffect(() => {
     fetch("/api/galeri")
@@ -771,6 +765,8 @@ export default function App() {
   const [customFilePreview, setCustomFilePreview] = useState("");
   const [customFileObj, setCustomFileObj] = useState(null);
   const [uploadError, setUploadError] = useState("");
+  const [ucapanSubmitted, setUcapanSubmitted] = useState(false);
+  const [ucapanSubmittedNama, setUcapanSubmittedNama] = useState("");
   const [posterSubmitted, setPosterSubmitted] = useState(false);
   const [submittedInfo, setSubmittedInfo] = useState({ nama: "", paket: "" });
   const [posterSubmitting, setPosterSubmitting] = useState(false);
@@ -785,7 +781,7 @@ export default function App() {
       .then((res) => (res.ok ? res.json() : []))
       .then((saved) => {
         if (Array.isArray(saved) && saved.length > 0) {
-          setUcapanList([...saved, ...initialUcapan]);
+          setUcapanList(saved);
         }
       })
       .catch(() => {});
@@ -803,7 +799,9 @@ export default function App() {
       });
       const saved = res.ok ? await res.json() : { nama, asal, teks };
       setUcapanList([saved, ...ucapanList]);
+      setUcapanSubmittedNama(nama);
       setNama(""); setAsal(""); setTeks("");
+      setUcapanSubmitted(true);
     } finally {
       setSubmittingUcapan(false);
     }
@@ -1309,6 +1307,41 @@ export default function App() {
       </footer>
 
       <AnimatePresence>
+        {ucapanSubmitted && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setUcapanSubmitted(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card border border-white/10 rounded-3xl p-10 md:p-12 text-center flex flex-col items-center max-w-md w-full relative"
+            >
+              <button
+                onClick={() => setUcapanSubmitted(false)}
+                aria-label="Tutup"
+                className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                <Heart size={28} className="text-[hsl(var(--primary))]" />
+              </div>
+              <h3 className="text-2xl font-medium mb-2">Terima kasih, {ucapanSubmittedNama}!</h3>
+              <p className="text-muted-foreground text-sm max-w-sm">
+                Ucapanmu telah tersimpan dan akan tayang di Dinding Ucapan. Terima kasih sudah merayakan bersama kami.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+
         {posterSubmitted && (
           <motion.div
             initial={{ opacity: 0 }}
