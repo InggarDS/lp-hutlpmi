@@ -922,7 +922,7 @@ export default function App() {
           <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[hsl(var(--background))] to-transparent" />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl px-4 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 sm:gap-12 lg:gap-8 items-center">
+        <div className="relative z-10 w-full max-w-7xl px-4 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 sm:gap-12 lg:gap-8 items-center">
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
             <motion.div {...fadeUp(0)} className="flex items-center justify-center lg:justify-start gap-2 mb-4 sm:mb-6">
               <span className="text-xs uppercase tracking-widest text-[hsl(var(--primary))]">30 Agustus 2026</span>
@@ -1300,6 +1300,18 @@ export default function App() {
             </div>
           </motion.div>
         </div>
+      </section>
+
+      {/* 7. Langkah Berikutnya CTA */}
+      <section className="py-16 md:py-20 px-8 flex items-center justify-center bg-background">
+        <a
+          href="https://www.langkahberikutnya.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block hover:opacity-80 transition-opacity"
+        >
+          <img src="/images/logo-langkah-berikutnya.png" alt="Langkah Berikutnya" className="w-48 sm:w-64 md:w-80 h-auto" />
+        </a>
       </section>
 
       {/* 8. Footer */}
