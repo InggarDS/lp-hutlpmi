@@ -742,6 +742,7 @@ const AddToCalendarButton = ({ className = "" }) => {
 export default function App() {
   const [ucapanList, setUcapanList] = useState([]);
   const [galeriList, setGaleriList] = useState(galeriFoto);
+  const [galeriLoading, setGaleriLoading] = useState(true);
   useEffect(() => {
     fetch("/api/galeri")
       .then((res) => (res.ok ? res.json() : []))
@@ -750,7 +751,8 @@ export default function App() {
           setGaleriList(saved.map((g) => ({ src: g.src, caption: g.caption })));
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setGaleriLoading(false));
   }, []);
   const [nama, setNama] = useState("");
   const [asal, setAsal] = useState("");
@@ -1281,14 +1283,20 @@ export default function App() {
           <motion.div {...fadeUp(0.4)} className="w-full">
             <h3 className="text-2xl font-medium mb-8">Momen Pelayanan</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {galeriList.map((f, i) => (
-                <div key={i} className="aspect-square rounded-xl overflow-hidden relative group">
-                  <img src={f.src} alt={f.caption} className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
-                  <div className="absolute inset-0 flex flex-col justify-end p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                     <span className="text-xs text-white/90 text-left">{f.caption}</span>
+              {galeriLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="aspect-square rounded-xl overflow-hidden bg-white/5 animate-pulse" />
+                ))
+              ) : (
+                galeriList.map((f, i) => (
+                  <div key={i} className="aspect-square rounded-xl overflow-hidden relative group">
+                    <img src={f.src} alt={f.caption} className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
+                    <div className="absolute inset-0 flex flex-col justify-end p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                       <span className="text-xs text-white/90 text-left">{f.caption}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </motion.div>
         </div>
