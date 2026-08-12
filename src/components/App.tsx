@@ -442,7 +442,7 @@ const timeline = [
     year: "2020",
     title: "Explo Digital",
     text: "Ketika Covid-19 mengubah tatanan dunia termasuk dalam pelayanan, LPMI secara adaptif menyelenggarakan Explo Digital yang dilaksanakan secara online, live streaming, dengan kelompok-kelompok kecil di berbagai daerah di Indonesia. Lebih dari 3000 orang terhubung dalam latihan pelayanan selama 3 hari.",
-    video: "https://bqevghfoqjsguker.public.blob.vercel-storage.com/sejarah/2020-pelayanan-online.mp4",
+    images: ["/images/sejarah-2020-1.png", "/images/sejarah-2020-2.png", "/images/sejarah-2020-3.png"],
   },
   {
     year: "2026",
@@ -1303,7 +1303,10 @@ export default function App() {
       </section>
 
       {/* 7. Langkah Berikutnya CTA */}
-      <section className="py-16 md:py-20 px-8 flex items-center justify-center bg-background">
+      <section className="py-16 md:py-20 px-8 flex flex-col items-center justify-center text-center gap-6 bg-background">
+        <p className="max-w-2xl text-sm md:text-base text-muted-foreground">
+          Mengenal Tuhan dan bertumbuh dalam kasih adalah langkah bermakna yang dapat Saudara ambil sekarang. Baca Injil Lukas & saksikan filmnya:
+        </p>
         <a
           href="https://www.langkahberikutnya.org/"
           target="_blank"
