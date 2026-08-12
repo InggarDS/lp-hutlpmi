@@ -76,6 +76,9 @@ const items = await client
     </div>
 
     <script>
+      import { compressImage, MAX_UPLOAD_SIZE } from "../../lib/image";
+      import { uploadToSupabase } from "../../lib/uploadClient";
+
       let uploadedUrl = "";
       const dropzone = document.getElementById("dropzone")!;
       const dropzoneText = document.getElementById("dropzone-text")!;
@@ -85,12 +88,20 @@ const items = await client
       const formError = document.getElementById("form-error")!;
 
       fileInput.addEventListener("change", async () => {
-        const file = fileInput.files?.[0];
-        if (!file) return;
+        const rawFile = fileInput.files?.[0];
+        if (!rawFile) return;
         uploadedUrl = "";
         formError.textContent = "";
-        dropzoneText.textContent = "Mengunggah...";
+        dropzoneText.textContent = "Mengompres...";
 
+        const file = await compressImage(rawFile);
+        if (file.size > MAX_UPLOAD_SIZE) {
+          formError.textContent = "Ukuran file maksimal 3MB";
+          dropzoneText.textContent = "Klik untuk pilih foto (JPG/PNG/WEBP)";
+          return;
+        }
+
+        dropzoneText.textContent = "Mengunggah...";
         const existingImg = dropzone.querySelector("img");
         if (existingImg) existingImg.remove();
         const preview = document.createElement("img");
@@ -98,11 +109,7 @@ const items = await client
         dropzone.appendChild(preview);
 
         try {
-          const { upload } = await import("@vercel/blob/client");
-          const blob = await upload(`galeri/${Date.now()}-${file.name}`, file, {
-            access: "public",
-            handleUploadUrl: "/api/upload",
-          });
+          const blob = await uploadToSupabase(`galeri/${Date.now()}-${file.name}`, file);
           uploadedUrl = blob.url;
           dropzoneText.textContent = "";
         } catch (err) {

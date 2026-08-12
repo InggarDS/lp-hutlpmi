@@ -5,6 +5,8 @@ import {
   Landmark, Sparkles, Quote, Image as ImageIcon, ArrowRight, CalendarPlus,
   CheckCircle2
 } from "lucide-react";
+import { compressImage, MAX_UPLOAD_SIZE } from "../lib/image";
+import { uploadToSupabase } from "../lib/uploadClient";
 
 // --- GLOBAL STYLES & THEME ---
 const GlobalStyles = () => (
@@ -809,22 +811,32 @@ export default function App() {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCustomFile(file.name);
-    setCustomFilePreview(URL.createObjectURL(file));
-    setCustomFileObj(file);
     setUploadError("");
+    const compressed = await compressImage(file);
+    if (compressed.size > MAX_UPLOAD_SIZE) {
+      setUploadError("Ukuran file maksimal 3MB");
+      return;
+    }
+    setCustomFile(compressed.name);
+    setCustomFilePreview(URL.createObjectURL(compressed));
+    setCustomFileObj(compressed);
   };
 
-  const handleBuktiFileChange = (e) => {
+  const handleBuktiFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBuktiFile(file.name);
-    setBuktiFilePreview(URL.createObjectURL(file));
-    setBuktiFileObj(file);
     setBuktiUploadError("");
+    const compressed = await compressImage(file);
+    if (compressed.size > MAX_UPLOAD_SIZE) {
+      setBuktiUploadError("Ukuran file maksimal 3MB");
+      return;
+    }
+    setBuktiFile(compressed.name);
+    setBuktiFilePreview(URL.createObjectURL(compressed));
+    setBuktiFileObj(compressed);
   };
 
   const submitPoster = async (e) => {
@@ -836,15 +848,10 @@ export default function App() {
     setUploadError("");
     setBuktiUploadError("");
     try {
-      const { upload } = await import("@vercel/blob/client");
-
       let customFileUrl = "";
       if (customFileObj) {
         try {
-          const blob = await upload(`poster/${Date.now()}-${customFileObj.name}`, customFileObj, {
-            access: "public",
-            handleUploadUrl: "/api/upload",
-          });
+          const blob = await uploadToSupabase(`poster/${Date.now()}-${customFileObj.name}`, customFileObj);
           customFileUrl = blob.url;
         } catch (err) {
           setUploadError(err instanceof Error ? err.message : "Gagal mengunggah gambar");
@@ -854,10 +861,7 @@ export default function App() {
 
       let buktiFileUrl = "";
       try {
-        const blob = await upload(`poster/${Date.now()}-${buktiFileObj.name}`, buktiFileObj, {
-          access: "public",
-          handleUploadUrl: "/api/upload",
-        });
+        const blob = await uploadToSupabase(`poster/${Date.now()}-${buktiFileObj.name}`, buktiFileObj);
         buktiFileUrl = blob.url;
       } catch (err) {
         setBuktiUploadError(err instanceof Error ? err.message : "Gagal mengunggah bukti transfer");
@@ -1304,7 +1308,7 @@ export default function App() {
 
       {/* 7. Langkah Berikutnya CTA */}
       <section className="py-16 md:py-20 px-8 flex flex-col items-center justify-center text-center gap-6 bg-background">
-        <p className="max-w-2xl text-sm md:text-base text-muted-foreground">
+        <p className="max-w-2xl text-base md:text-lg italic text-muted-foreground">
           Mengenal Tuhan dan bertumbuh dalam kasih adalah langkah bermakna yang dapat Saudara ambil sekarang. Baca Injil Lukas & saksikan filmnya:
         </p>
         <a

@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { ObjectId } from "mongodb";
 import { del } from "@vercel/blob";
 import clientPromise from "../../../lib/mongodb";
+import { deleteSupabaseFiles } from "../../../lib/supabaseServer";
 
 export const prerender = false;
 
@@ -32,7 +33,11 @@ export const DELETE: APIRoute = async ({ params }) => {
   await collection.deleteOne({ _id: objectId });
 
   if (typeof doc.src === "string" && doc.src.startsWith("http")) {
-    await del(doc.src, { token: import.meta.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+    if (doc.src.includes("blob.vercel-storage.com")) {
+      await del(doc.src, { token: import.meta.env.BLOB_READ_WRITE_TOKEN }).catch(() => {});
+    } else if (doc.src.includes("/storage/v1/object/public/")) {
+      await deleteSupabaseFiles([doc.src]).catch(() => {});
+    }
   }
 
   return new Response(JSON.stringify({ ok: true }), {

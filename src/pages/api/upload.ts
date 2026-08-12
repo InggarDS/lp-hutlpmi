@@ -4,7 +4,7 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 export const prerender = false;
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE = 8 * 1024 * 1024;
+const MAX_SIZE = 3 * 1024 * 1024;
 
 export const POST: APIRoute = async ({ request }) => {
   const body = (await request.json()) as HandleUploadBody;
