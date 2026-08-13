@@ -1,0 +1,22 @@
+---
+import { GreetingWall } from "../../components/GreetingWall";
+import "../../styles/global.css";
+---
+
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/jpeg" href="/images/logo.jpeg" />
+    <title>Greetings Wall Live &middot; HUT ke-58 LPMI</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div style="position: fixed; inset: 0;">
+      <GreetingWall client:load tiers={["gold", "platinum"]} variant="fullscreen" />
+    </div>
+  </body>
+</html>
