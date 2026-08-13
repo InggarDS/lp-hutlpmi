@@ -4,12 +4,16 @@ export const prerender = false;
 import clientPromise from "../../lib/mongodb";
 
 const client = await clientPromise;
-const items = await client
+const allItems = await client
   .db("lpmi_hut58")
   .collection("galeri")
   .find({})
   .sort({ createdAt: -1 })
   .toArray();
+
+// Only list photos hosted on Supabase Storage; older entries from before
+// the Vercel Blob -> Supabase migration are hidden here too.
+const items = allItems.filter((item) => typeof item.src === "string" && item.src.includes(".supabase.co/"));
 ---
 
 <html lang="id">

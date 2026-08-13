@@ -571,8 +571,13 @@ export default function App() {
     fetch("/api/galeri")
       .then((res) => (res.ok ? res.json() : []))
       .then((saved) => {
-        if (Array.isArray(saved) && saved.length > 0) {
-          setGaleriList(saved.map((g) => ({ src: g.src, caption: g.caption })));
+        if (Array.isArray(saved)) {
+          // Only show photos hosted on Supabase Storage; older entries from
+          // before the Vercel Blob -> Supabase migration are skipped.
+          const supabasePhotos = saved.filter((g) => typeof g.src === "string" && g.src.includes(".supabase.co/"));
+          if (supabasePhotos.length > 0) {
+            setGaleriList(supabasePhotos.map((g) => ({ src: g.src, caption: g.caption })));
+          }
         }
       })
       .catch(() => {})
