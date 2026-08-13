@@ -379,11 +379,14 @@ const ScrollingUcapanWall = ({ items }: { items: any[] }) => {
   const animate = isMobile
     ? items.length >= MOBILE_AUTO_SCROLL_THRESHOLD
     : items.length > AUTO_SCROLL_THRESHOLD;
+  // Mobile has a single column carrying all items, so scale duration with
+  // item count to keep per-card pacing steady instead of racing by.
+  const mobileDuration = Math.max(60, items.length * 9);
 
   return (
     <div className={`relative w-full ${animate ? "h-[560px] md:h-[640px]" : ""}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6 h-full">
-        <MarqueeColumn items={columns[0]} direction="up" duration={34} animate={animate} />
+        <MarqueeColumn items={columns[0]} direction="up" duration={isMobile ? mobileDuration : 34} animate={animate} />
         <MarqueeColumn items={columns[1]} direction="down" duration={40} animate={animate} className="hidden sm:block" />
         <MarqueeColumn items={columns[2]} direction="up" duration={30} animate={animate} className="hidden lg:block" />
         <MarqueeColumn items={columns[3]} direction="down" duration={38} animate={animate} className="hidden xl:block" />
@@ -391,8 +394,8 @@ const ScrollingUcapanWall = ({ items }: { items: any[] }) => {
       {/* Fade top & bottom edges into the page background, only relevant while auto-scrolling */}
       {animate && (
         <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 sm:h-20 bg-gradient-to-b from-background via-background/70 to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 sm:h-20 bg-gradient-to-t from-background via-background/70 to-transparent z-10" />
         </>
       )}
     </div>
@@ -510,10 +513,10 @@ const GreetingCard = React.memo(function GreetingCard({ item }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      initial={{ opacity: 0, scale: 0.96, y: 14, filter: "blur(6px)" }}
+      animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+      exit={{ opacity: 0, scale: 0.98, y: -10, filter: "blur(6px)" }}
+      transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 flex flex-col items-center justify-center text-center gap-4 p-6"
     >
       <motion.div
@@ -635,7 +638,7 @@ function GreetingWall() {
 
   return (
     <div className="relative mx-auto mt-8 lg:mt-12 w-full max-w-2xl min-h-[320px] sm:min-h-[420px] md:min-h-[460px]">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {display ? (
           <GreetingCard key={display._id} item={display} />
         ) : (
@@ -936,10 +939,19 @@ export default function App() {
               Faithful Through <br/><span className="font-serif italic font-normal text-[hsl(var(--primary))]">Generations</span>
             </motion.h1>
 
-            <motion.p {...fadeUp(0.2)} className="text-base sm:text-lg text-hero-subtitle max-w-2xl mx-auto lg:mx-0 mb-8 sm:mb-12 leading-relaxed">
-              Bersama Bp. David Robbins, President CCC International, sebagai tamu kehormatan.
-              Bergabunglah merayakan 58 tahun kesetiaan Tuhan dalam pelayanan mahasiswa.
-            </motion.p>
+            <motion.div {...fadeUp(0.2)} className="flex flex-row items-center gap-0 max-w-[535px] mx-auto lg:mx-0 mb-8 sm:mb-12">
+              <div className="relative w-40 sm:w-44 md:w-64 aspect-square rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
+                <img
+                  src="/images/david-robbins-bg.png"
+                  alt="Bp. David Robbins, President CCC International"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
+              <p className="text-sm sm:text-base md:text-lg text-hero-subtitle leading-snug sm:leading-relaxed text-left">
+                Bersama <span className="text-xs sm:text-sm md:text-base font-bold text-[hsl(var(--primary))]">Bp. David Robbins,</span> <span className="text-xs sm:text-sm md:text-base font-semibold text-[hsl(var(--primary))]">President CCC International</span>, sebagai tamu kehormatan.
+                Bergabunglah merayakan 58 tahun kesetiaan Tuhan dalam pelayanan mahasiswa.
+              </p>
+            </motion.div>
 
            
 
