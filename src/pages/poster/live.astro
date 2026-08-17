@@ -86,7 +86,7 @@ import "../../styles/global.css";
           if (Array.isArray(saved)) {
             galleryPhotos = saved
               .map((g) => g?.src)
-              .filter((src): src is string => typeof src === "string" && src.startsWith("http"));
+              .filter((src): src is string => typeof src === "string" && src.includes(".supabase.co/"));
           }
           cycle();
         })
