@@ -12,11 +12,87 @@ import "../../styles/global.css";
     <title>Greetings Wall Live &middot; HUT ke-58 LPMI</title>
     <style>
       html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+
+      .live-bg-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        opacity: 0;
+        overflow: hidden;
+        background-color: #0a0a0a;
+        background-size: cover;
+        background-position: center;
+        transform-origin: center;
+        transition: opacity 2.5s ease;
+        filter: grayscale(1) brightness(0.42) contrast(1.05);
+      }
+      .live-bg-layer.active { opacity: 1; }
+      .live-bg-layer::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0.25) 45%, rgba(0,0,0,0.45));
+      }
+
+      @keyframes live-bg-zoom {
+        from { transform: scale(1); }
+        to { transform: scale(1.08); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .live-bg-layer { transition: none; animation: none !important; }
+      }
     </style>
   </head>
   <body>
-    <div style="position: fixed; inset: 0;">
+    <div class="live-bg-layer" id="bg-layer-a"></div>
+    <div class="live-bg-layer" id="bg-layer-b"></div>
+    <div style="position: fixed; inset: 0; z-index: 1;">
       <GreetingWall client:load tiers={["gold", "platinum"]} variant="fullscreen" />
     </div>
+
+    <script>
+      const layerA = document.getElementById("bg-layer-a") as HTMLDivElement;
+      const layerB = document.getElementById("bg-layer-b") as HTMLDivElement;
+      const layers = [layerA, layerB];
+      let activeIdx = 0;
+
+      const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
+      let galleryPhotos: string[] = [];
+      const CYCLE_MS = 25000;
+
+      const applyPhoto = (layer: HTMLDivElement, url: string) => {
+        layer.style.backgroundImage = `url(${url})`;
+        layer.classList.add("active");
+        // Reset the zoom animation so every photo starts from scale(1),
+        // forcing a reflow so the browser re-triggers it reliably.
+        layer.style.animation = "none";
+        void layer.offsetWidth;
+        layer.style.animation = `live-bg-zoom ${CYCLE_MS / 1000}s ease-out forwards`;
+      };
+
+      const cycle = () => {
+        if (galleryPhotos.length === 0) return;
+        const nextIdx = 1 - activeIdx;
+        applyPhoto(layers[nextIdx], pick(galleryPhotos));
+        layers[activeIdx].classList.remove("active");
+        activeIdx = nextIdx;
+      };
+
+      fetch("/api/galeri")
+        .then((res) => (res.ok ? res.json() : []))
+        .then((saved) => {
+          if (Array.isArray(saved)) {
+            galleryPhotos = saved
+              .map((g) => g?.src)
+              .filter((src): src is string => typeof src === "string" && src.startsWith("http"));
+          }
+          cycle();
+        })
+        .catch(() => {});
+
+      setInterval(cycle, CYCLE_MS);
+    </script>
   </body>
 </html>

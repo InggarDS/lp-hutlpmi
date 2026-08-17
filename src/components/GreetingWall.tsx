@@ -48,6 +48,9 @@ const TierBadge = ({ paket, large = false }: { paket: string; large?: boolean })
 export const GreetingCard = React.memo(function GreetingCard({ item, variant = "inline" }: { item: any; variant?: "inline" | "fullscreen" }) {
   const textLight = { color: "#f5f5f5" };
   const isFullscreen = variant === "fullscreen";
+  // Slow Ken Burns zoom-in for the card's own on-screen time, matching the
+  // background photo zoom so poster + text feel like part of the same motion.
+  const durationSec = (TIER_DURATION_MS[item.paket] || 5000) / 1000;
 
   return (
     <motion.div
@@ -60,8 +63,9 @@ export const GreetingCard = React.memo(function GreetingCard({ item, variant = "
       <motion.div
         className="flex flex-col items-center max-w-full max-h-full"
         style={{ gap: isFullscreen ? "2rem" : "1rem" }}
-        animate={{ scale: [1, 1.015, 1] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        initial={{ scale: 1 }}
+        animate={{ scale: 1.08 }}
+        transition={{ duration: durationSec, ease: "easeOut" }}
       >
         {item.gambar && (
           <img
