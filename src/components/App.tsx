@@ -1052,7 +1052,7 @@ export default function App() {
                     ) : (
                       <>
                         <Upload size={20} className="text-white/40" />
-                        <span className="text-sm text-white/60">Unggah gambar poster (JPG/PNG/WEBP)</span>
+                        <span className="text-sm text-white/60">Unggah logo, foto, atau gambar lainnya</span>
                       </>
                     )}
                     {posterSubmitting && customFileObj && (
