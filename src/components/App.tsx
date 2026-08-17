@@ -588,7 +588,7 @@ export default function App() {
   const [teks, setTeks] = useState("");
   const [submittingUcapan, setSubmittingUcapan] = useState(false);
 
-  const [selectedPkg, setSelectedPkg] = useState("gold");
+  const [selectedPkg, setSelectedPkg] = useState("");
   const [payMethod, setPayMethod] = useState("transfer");
   const [posterNama, setPosterNama] = useState("");
   const [posterPesan, setPosterPesan] = useState("");
@@ -669,8 +669,9 @@ export default function App() {
   const submitPoster = async (e) => {
     e.preventDefault();
     if (!posterNama.trim() || posterSubmitting) return;
-    if (!posterPesan.trim() && !customFileObj) return;
+    if (!posterPesan.trim() || !customFileObj) return;
     if (!buktiFileObj) return;
+    if (!selectedPkg) return;
     setPosterSubmitting(true);
     setUploadError("");
     setBuktiUploadError("");
@@ -999,6 +1000,7 @@ export default function App() {
         <div className="grid md:grid-cols-[1fr_1.5fr] gap-12">
           {/* Packages */}
           <motion.div {...fadeUp(0.2)} className="flex flex-col gap-4">
+            <label className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Pilih Paket</label>
             {packages.map((p) => (
               <button key={p.id} onClick={() => setSelectedPkg(p.id)}
                 style={{
@@ -1038,11 +1040,11 @@ export default function App() {
 
                 <div className="mb-6">
                   <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Poster Ucapan Anda</label>
-                  <p className="text-xs text-white/40 mb-3">Ini yang akan tayang di layar &amp; website — tulis ucapan, unggah gambar, atau keduanya.</p>
+                  <p className="text-xs text-white/40 mb-3">Ini yang akan tayang di layar &amp; website — tulis ucapan dan unggah gambar.</p>
 
-                  <textarea value={posterPesan} onChange={(e) => setPosterPesan(e.target.value)} rows={3}
+                  <textarea value={posterPesan} onChange={(e) => setPosterPesan(e.target.value)} rows={3} required
                     className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-[hsl(var(--primary))] text-white mb-3"
-                    placeholder="Ucapan yang akan tampil... (opsional jika mengunggah gambar)" />
+                    placeholder="Ucapan yang akan tampil..." />
 
                   <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
                     {customFilePreview ? (
@@ -1050,13 +1052,13 @@ export default function App() {
                     ) : (
                       <>
                         <Upload size={20} className="text-white/40" />
-                        <span className="text-sm text-white/60">Unggah gambar poster (opsional, JPG/PNG/WEBP)</span>
+                        <span className="text-sm text-white/60">Unggah gambar poster (JPG/PNG/WEBP)</span>
                       </>
                     )}
                     {posterSubmitting && customFileObj && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">Mengunggah...</div>
                     )}
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} required />
                   </label>
                 </div>
 
@@ -1108,7 +1110,7 @@ export default function App() {
 
                 {uploadError && <div className="text-xs text-red-400 mb-3">{uploadError}</div>}
 
-                <button type="submit" disabled={posterSubmitting || !buktiFileObj || (!posterPesan.trim() && !customFileObj)}
+                <button type="submit" disabled={posterSubmitting || !buktiFileObj || !posterPesan.trim() || !customFileObj || !selectedPkg}
                   className="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold rounded-lg px-6 py-4 transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
                   {posterSubmitting ? "Mengunggah & Mengirim..." : "Kirim & Ajukan Verifikasi"}
                 </button>
