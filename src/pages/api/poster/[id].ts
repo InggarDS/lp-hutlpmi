@@ -8,6 +8,7 @@ export const prerender = false;
 
 const DB_NAME = "lpmi_hut58";
 const VALID_STATUSES = ["pending", "approved", "declined"];
+const VALID_PAKET = ["silver", "gold", "platinum"];
 
 function parseId(id: string | undefined): ObjectId | null {
   try {
@@ -19,9 +20,32 @@ function parseId(id: string | undefined): ObjectId | null {
 
 export const PATCH: APIRoute = async ({ params, request }) => {
   const body = await request.json();
-  const status = String(body.status ?? "");
-  if (!VALID_STATUSES.includes(status)) {
-    return new Response(JSON.stringify({ error: "Invalid status" }), {
+  const update: Record<string, string> = {};
+
+  if (body.status !== undefined) {
+    const status = String(body.status);
+    if (!VALID_STATUSES.includes(status)) {
+      return new Response(JSON.stringify({ error: "Invalid status" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    update.status = status;
+  }
+
+  if (body.paket !== undefined) {
+    const paket = String(body.paket);
+    if (!VALID_PAKET.includes(paket)) {
+      return new Response(JSON.stringify({ error: "Invalid paket" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    update.paket = paket;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return new Response(JSON.stringify({ error: "Nothing to update" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
@@ -39,7 +63,7 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   const result = await client
     .db(DB_NAME)
     .collection("poster")
-    .updateOne({ _id: objectId }, { $set: { status } });
+    .updateOne({ _id: objectId }, { $set: update });
 
   if (result.matchedCount === 0) {
     return new Response(JSON.stringify({ error: "Not found" }), {

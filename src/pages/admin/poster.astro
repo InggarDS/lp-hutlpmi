@@ -35,6 +35,8 @@ const ucapanList = await client
       .status-approved { color: #6fcf97; }
       .status-declined { color: #f26363; }
       td img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; display: block; }
+      select.paket-select { background: #1a1a1a; color: #eee; border: 1px solid #444; border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.8rem; }
+      select.paket-select:disabled { opacity: 0.5; }
       .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
       button { cursor: pointer; border: 1px solid #444; background: #1a1a1a; color: #eee; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; }
       button:hover { background: #2a2a2a; }
@@ -65,7 +67,13 @@ const ucapanList = await client
         {submissions.map((s) => (
           <tr data-id={s._id.toString()}>
             <td>{s.nama}</td>
-            <td>{s.paket}</td>
+            <td>
+              <select class="paket-select">
+                <option value="silver" selected={s.paket === "silver"}>Silver</option>
+                <option value="gold" selected={s.paket === "gold"}>Gold</option>
+                <option value="platinum" selected={s.paket === "platinum"}>Platinum</option>
+              </select>
+            </td>
             <td>{s.pesan || "-"}</td>
             <td>
               {s.customFile && s.customFile.startsWith("http") ? (
@@ -160,6 +168,29 @@ const ucapanList = await client
 
       withRowId(".approve-btn", (btn, id) => setStatus(btn, id, "approved"));
       withRowId(".decline-btn", (btn, id) => setStatus(btn, id, "declined"));
+
+      document.querySelectorAll(".paket-select").forEach((select) => {
+        select.addEventListener("change", async () => {
+          const el = select as HTMLSelectElement;
+          const row = el.closest("tr");
+          const id = row?.getAttribute("data-id");
+          if (!id) return;
+          const previous = el.dataset.previous ?? el.value;
+          el.setAttribute("disabled", "true");
+          const res = await fetch(`/api/poster/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paket: el.value }),
+          });
+          if (res.ok) {
+            el.dataset.previous = el.value;
+          } else {
+            el.value = previous;
+            alert("Gagal mengubah paket");
+          }
+          el.removeAttribute("disabled");
+        });
+      });
 
       withRowId(".delete-btn", async (btn, id) => {
         if (!confirm("Hapus pengajuan ini secara permanen?")) return;
