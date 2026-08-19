@@ -283,77 +283,6 @@ const timeline = [
   },
 ];
 
-// --- SEJARAH: cinematic scroll-driven "film" through the years ---
-// One pinned viewport; each year is a full-bleed frame that crossfades in/out
-// as the visitor scrolls, like scrubbing through a short documentary.
-const SejarahFrame = ({ item, index, total, progress }) => {
-  const segment = 1 / total;
-  const start = index * segment;
-  const end = (index + 1) * segment;
-  const fadeIn = start + segment * 0.18;
-  const fadeOutStart = end - segment * 0.18;
-  const opacity = useTransform(progress, [start, fadeIn, fadeOutStart, end], [0, 1, 1, 0]);
-  const scale = useTransform(progress, [start, end], [1.08, 1]);
-  const imgs = item.images || (item.image ? [item.image] : []);
-  const bgImg = imgs[0];
-
-  return (
-    <motion.div style={{ opacity }} className="absolute inset-0">
-      {bgImg ? (
-        <motion.img
-          style={{ scale }}
-          src={bgImg}
-          alt={item.title}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--card))] via-black to-black" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/20" />
-      <div className="absolute inset-x-0 bottom-0 px-8 sm:px-12 md:px-20 pb-[16vh] sm:pb-[18vh] max-w-3xl">
-        <div className="font-serif italic text-[hsl(var(--primary))] text-4xl md:text-6xl mb-3">{item.year}</div>
-        <div className="uppercase tracking-[3px] text-xs md:text-sm font-semibold text-foreground/90 mb-4">{item.title}</div>
-        <p className="text-muted-foreground text-sm md:text-lg leading-relaxed max-w-2xl">{item.text}</p>
-      </div>
-    </motion.div>
-  );
-};
-
-const SejarahFilm = ({ timeline }) => {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
-  const total = timeline.length;
-
-  return (
-    <div ref={containerRef} style={{ height: `${total * 100}vh` }} className="relative">
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-black">
-        {timeline.map((item, i) => (
-          <SejarahFrame key={item.year + i} item={item} index={i} total={total} progress={scrollYProgress} />
-        ))}
-
-        {/* Letterbox bars for the cinematic frame */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[6vh] sm:h-[8vh] bg-black z-30" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[6vh] sm:h-[8vh] bg-black z-30" />
-
-        {/* Timecode label, top-right */}
-        <div className="absolute top-[2.5vh] right-6 md:right-16 z-40 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
-          SEJARAH · {total} BAB
-        </div>
-
-        {/* Scrubber, bottom */}
-        <div className="absolute bottom-[3vh] left-6 right-6 md:left-16 md:right-16 z-40">
-          <div className="h-[2px] w-full bg-white/15 rounded-full overflow-hidden">
-            <motion.div
-              style={{ scaleX: scrollYProgress, transformOrigin: "left" }}
-              className="h-full w-full bg-[hsl(var(--primary))]"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const galeriFoto = [
   { src: "https://picsum.photos/seed/lpmi1/600/450", caption: "Retret pemimpin mahasiswa" },
   { src: "https://picsum.photos/seed/lpmi2/600/450", caption: "KKR kampus tahunan" },
@@ -603,8 +532,8 @@ export default function App() {
       </section>
 
       {/* 3. Sejarah Section (Adapting "Search has changed") */}
-      <section id="sejarah" className="pt-32 md:pt-44 pb-20 md:pb-32 bg-black">
-        <div className="text-center mb-16 md:mb-24 px-8 md:px-28 max-w-5xl mx-auto">
+      <section id="sejarah" className="pt-32 md:pt-44 pb-20 md:pb-32 px-8 md:px-28 max-w-5xl mx-auto bg-black">
+        <div className="text-center mb-24">
           <motion.div {...fadeUp(0)}>
             <SectionLabel>Sejarah Singkat</SectionLabel>
           </motion.div>
@@ -612,11 +541,130 @@ export default function App() {
             58 Tahun <span className="font-serif italic font-normal text-[hsl(var(--primary))]">Perjalanan.</span>
           </motion.h2>
           <motion.p {...fadeUp(0.2)} className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Dari kelompok kecil doa dan pemuridan, meluas menjadi jejaring pergerakan mahasiswa yang memberkati bangsa. Gulir untuk memutar kisahnya, tahun demi tahun.
+            Dari kelompok kecil doa dan pemuridan, meluas menjadi jejaring pergerakan mahasiswa yang memberkati bangsa.
           </motion.p>
         </div>
 
-        <SejarahFilm timeline={timeline} />
+        <div className="relative max-w-3xl mx-auto">
+          {timeline.map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
+              className="relative flex gap-8 pb-16 last:pb-0 group"
+            >
+              {/* Connecting Line */}
+              {i !== timeline.length - 1 && (
+                <div className="absolute left-[27px] top-[60px] bottom-[-20px] w-0.5 timeline-line opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              )}
+
+              {/* Year Node */}
+              <div className="shrink-0 relative z-10">
+                <motion.div
+                  whileHover={{ scale: 1.1, backgroundColor: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="w-14 h-14 rounded-full border bg-card flex items-center justify-center font-serif text-xl timeline-node cursor-default transition-colors duration-300"
+                >
+                  {item.year.slice(0, 4)}
+                </motion.div>
+              </div>
+
+              {/* Content Box */}
+              <div className="pt-2 flex-1">
+                {(() => {
+                  const imgs = item.images || (item.image ? [item.image] : []);
+                  const hasMedia = imgs.length > 0 || !!item.video;
+                  return (
+                    <motion.div
+                      whileHover={{ x: 10 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      className={`liquid-glass rounded-2xl hover:bg-white/5 transition-colors duration-300 border border-[hsl(var(--primary))/0.1] overflow-hidden ${hasMedia ? "grid sm:grid-cols-[0.85fr_1.15fr]" : "p-6 md:p-8"}`}
+                    >
+                      {item.video && (
+                        <>
+                          {/* Mobile: natural size video with controls */}
+                          <video
+                            ref={(el) => el?.play().catch(() => {})}
+                            src={item.video}
+                            controls
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            preload="auto"
+                            className="block sm:hidden w-full h-auto"
+                          />
+                          {/* Desktop: fills the split-layout column height */}
+                          <div className="relative hidden sm:block w-full h-full overflow-hidden">
+                            <video
+                              ref={(el) => el?.play().catch(() => {})}
+                              src={item.video}
+                              controls
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              preload="auto"
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {!item.video && imgs.length === 1 && (
+                        <>
+                          {/* Mobile: natural aspect ratio, not cropped */}
+                          <img
+                            src={imgs[0]}
+                            alt={item.title}
+                            className="block sm:hidden w-full h-auto object-contain transition-transform duration-500 ease-out group-hover:scale-105"
+                          />
+                          {/* Desktop: fills the split-layout column height */}
+                          <div className="relative hidden sm:block w-full h-full overflow-hidden">
+                            <img
+                              src={imgs[0]}
+                              alt={item.title}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-transparent" />
+                          </div>
+                        </>
+                      )}
+                      {!item.video && imgs.length > 1 && (
+                        <div className="grid grid-cols-2 gap-1 sm:h-full">
+                          <div className="col-span-2 relative aspect-[16/9] overflow-hidden">
+                            <img
+                              src={imgs[0]}
+                              alt={`${item.title} 1`}
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                            />
+                          </div>
+                          {imgs.slice(1).map((src, idx) => (
+                            <div key={idx} className="relative aspect-square overflow-hidden">
+                              <img
+                                src={src}
+                                alt={`${item.title} ${idx + 2}`}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className={hasMedia ? "p-5 sm:p-6 md:p-8" : ""}>
+                        <div className={`font-serif italic text-[hsl(var(--primary))] mb-1 ${hasMedia ? "text-xl sm:text-3xl" : "text-3xl"}`}>{item.year}</div>
+                        <div className={`font-semibold uppercase tracking-wider text-foreground mb-3 ${hasMedia ? "text-xs sm:text-sm" : "text-sm"}`}>{item.title}</div>
+                        <p className={`text-muted-foreground leading-relaxed ${hasMedia ? "text-sm sm:text-base" : "text-base"}`}>
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </section>
 
       {/* 4. Dinding Ucapan (Adapting Mission Section style) */}
