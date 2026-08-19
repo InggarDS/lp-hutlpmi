@@ -6,9 +6,10 @@ import { uploadToSupabase } from "../lib/uploadClient";
 import { fadeUp } from "../lib/motion";
 
 const packages = [
-  { id: "silver", nama: "Silver", harga: "Rp 250.000", warna: "#C0C4CC", teks: "#3F4550", benefit: ["Poster tayang di website selama 1 bulan"] },
-  { id: "gold", nama: "Gold", harga: "Rp 500.000", warna: "#E5C158", teks: "#6B4E0A", benefit: ["Poster tayang di website selama 1 bulan", "Tayang di LED saat acara di Hotel Aryaduta"] },
-  { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", warna: "#B8C6D9", teks: "#294159", benefit: ["Poster tayang di website 1 bulan", "Tayang di LED acara", "Posisi utama & durasi lebih lama"] },
+  { id: "silver", nama: "Silver", harga: "Rp 250.000", warna: "#C0C4CC", teks: "#3F4550", benefit: ["Poster tayang di website selama Agustus-September", "Tayang di LED saat acara di Hotel Aryaduta, 3 detik per loop."] },
+  { id: "gold", nama: "Gold", harga: "Rp 500.000", warna: "#E5C158", teks: "#6B4E0A", benefit: ["Poster tayang di website selama Agustus-September", "Tayang di LED saat acara di Hotel Aryaduta 5 detik per loop."] },
+  { id: "platinum", nama: "Platinum", harga: "Rp 1.000.000", warna: "#B8C6D9", teks: "#294159", benefit: ["Poster tayang di website selama Agustus-September", "Tayang di LED saat acara di Hotel Aryaduta 7 detik per loop."] },
+  { id: "diamond", nama: "Diamond", harga: "Rp 2.500.000", warna: "#9FE0F0", teks: "#0F4C5C", benefit: ["Poster tayang di website selama Agustus-September", "Tayang di LED saat acara di Hotel Aryaduta 10 detik per loop."] },
 ];
 
 export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
@@ -130,15 +131,15 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
       <div className="grid md:grid-cols-[1fr_1.5fr] gap-12">
         {/* Packages */}
         <motion.div {...fadeUp(0.2)} className="flex flex-col gap-4">
-          <label className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Pilih Paket</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Pilih Paket <span className="text-red-400">*</span></label>
           {packages.map((p) => (
             <button key={p.id} onClick={() => setSelectedPkg(p.id)}
               style={{
                 background: `linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0) 60%), linear-gradient(135deg, ${p.warna}E6, ${p.warna}80)`,
                 borderColor: selectedPkg === p.id ? p.warna : `${p.warna}80`,
                 boxShadow: selectedPkg === p.id
-                  ? `inset 0 1px 1px rgba(255,255,255,0.7), inset 0 -10px 20px -12px rgba(0,0,0,0.35), 0 0 0 3px ${p.warna}40, 0 12px 32px -8px ${p.warna}CC`
-                  : `inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -8px 16px -12px rgba(0,0,0,0.3)`,
+                  ? `inset 0 1px 1px rgba(255,255,255,0.8), inset 0 -10px 20px -12px rgba(0,0,0,0.35), 0 0 0 3px ${p.warna}40, 0 14px 36px -6px ${p.warna}D9`
+                  : `inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -8px 16px -12px rgba(0,0,0,0.3), 0 8px 24px -10px ${p.warna}80`,
               }}
               className={`relative overflow-hidden text-left rounded-2xl p-6 border transition-all hover:border-opacity-80 ${selectedPkg === p.id ? "pkg-shine" : ""}`}
             >
@@ -162,14 +163,14 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
         <motion.div {...fadeUp(0.3)}>
           <form onSubmit={submitPoster} className="bg-card border border-white/10 rounded-3xl p-8">
             <div className="mb-6">
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Nama / Gereja Mitra</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Nama / Gereja Mitra <span className="text-red-400">*</span></label>
               <input value={posterNama} onChange={(e) => setPosterNama(e.target.value)} required
                 className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-[hsl(var(--primary))] text-white"
                 placeholder="cth. GKJ Bogor" />
             </div>
 
             <div className="mb-6">
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Poster Ucapan Anda</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Poster Ucapan Anda <span className="text-red-400">*</span></label>
               <p className="text-xs text-white/40 mb-3">Ini yang akan tayang di layar &amp; website — tulis ucapan dan unggah gambar.</p>
 
               <textarea value={posterPesan} onChange={(e) => setPosterPesan(e.target.value)} rows={3} required
@@ -218,7 +219,7 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
             </div>
 
             <div className="mb-8">
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Bukti Pembayaran</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-1 block">Bukti Pembayaran <span className="text-red-400">*</span></label>
               <p className="text-xs text-white/40 mb-3">Wajib diisi untuk verifikasi panitia — bukan poster Anda, dan tidak akan tayang di layar.</p>
               <label className="relative w-full h-32 border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 transition-colors overflow-hidden">
                 {buktiFilePreview ? (

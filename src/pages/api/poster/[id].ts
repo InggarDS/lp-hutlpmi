@@ -8,7 +8,7 @@ export const prerender = false;
 
 const DB_NAME = "lpmi_hut58";
 const VALID_STATUSES = ["pending", "approved", "declined"];
-const VALID_PAKET = ["silver", "gold", "platinum"];
+const VALID_PAKET = ["silver", "gold", "platinum", "diamond"];
 
 function parseId(id: string | undefined): ObjectId | null {
   try {

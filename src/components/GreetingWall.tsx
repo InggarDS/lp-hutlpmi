@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Quote } from "lucide-react";
 
 // --- GREETING WALL (Live Display) ---
-export const TIER_DURATION_MS = { platinum: 10000, gold: 7000, silver: 3000 };
-export const TIER_RANK = { platinum: 0, gold: 1, silver: 2 };
-export const TIER_ACCENT = { silver: "#6B7280", gold: "#A9770E", platinum: "#3D6A96" };
-export const TIER_LABEL = { silver: "Silver", gold: "Gold", platinum: "Platinum" };
+export const TIER_DURATION_MS = { diamond: 10000, platinum: 7000, gold: 5000, silver: 3000 };
+export const TIER_RANK = { diamond: 0, platinum: 1, gold: 2, silver: 3 };
+export const TIER_ACCENT = { silver: "#6B7280", gold: "#A9770E", platinum: "#3D6A96", diamond: "#1FAFC7" };
+export const TIER_LABEL = { silver: "Silver", gold: "Gold", platinum: "Platinum", diamond: "Diamond" };
 const POLL_INTERVAL_MS = 7000;
 
 const hexToRgba = (hex, alpha) => {

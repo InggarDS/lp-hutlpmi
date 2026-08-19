@@ -151,10 +151,11 @@ export const GlobalStyles = () => (
       position: absolute;
       top: -60%;
       left: 0;
-      width: 25%;
+      width: 40%;
       height: 220%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
-      animation: pkg-shine-sweep 2.4s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      filter: blur(6px);
+      animation: pkg-shine-sweep 3.2s ease-in-out infinite;
       pointer-events: none;
     }
     @media (prefers-reduced-motion: reduce) {
