@@ -128,24 +128,30 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
         </motion.div>
       )}
 
-      <div className="grid md:grid-cols-[1fr_1.5fr] gap-12">
+      <div className={`grid gap-8 md:gap-12 ${selectedPkg ? "md:grid-cols-[1fr_1.5fr]" : ""}`}>
         {/* Packages */}
-        <motion.div {...fadeUp(0.2)} className="flex flex-col gap-4">
+        <motion.div {...fadeUp(0.2)} className={`flex flex-col gap-4 ${selectedPkg ? "" : "max-w-md mx-auto w-full"}`}>
           <label className="text-xs font-semibold uppercase tracking-wider text-white/50 block">Pilih Paket <span className="text-red-400">*</span></label>
           {packages.map((p) => (
-            <button key={p.id} onClick={() => setSelectedPkg(p.id)}
+            <button key={p.id} onClick={() => setSelectedPkg(selectedPkg === p.id ? "" : p.id)}
               style={{
                 background: `linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0) 60%), linear-gradient(135deg, ${p.warna}E6, ${p.warna}80)`,
                 borderColor: selectedPkg === p.id ? p.warna : `${p.warna}80`,
                 boxShadow: selectedPkg === p.id
                   ? `inset 0 1px 1px rgba(255,255,255,0.8), inset 0 -10px 20px -12px rgba(0,0,0,0.35), 0 0 0 3px ${p.warna}40, 0 14px 36px -6px ${p.warna}D9`
                   : `inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -8px 16px -12px rgba(0,0,0,0.3), 0 8px 24px -10px ${p.warna}80`,
+                filter: selectedPkg && selectedPkg !== p.id ? "blur(2px) grayscale(0.3)" : "none",
+                opacity: selectedPkg && selectedPkg !== p.id ? 0.5 : 1,
               }}
-              className={`relative overflow-hidden text-left rounded-2xl p-6 border transition-all hover:border-opacity-80 ${selectedPkg === p.id ? "pkg-shine" : ""}`}
+              className={`relative overflow-hidden text-left rounded-2xl p-5 md:p-6 border transition-all duration-300 hover:border-opacity-80 ${selectedPkg === p.id ? "pkg-shine md:scale-[1.02]" : ""}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-bold text-lg" style={{ color: p.teks }}>{p.nama}</span>
-                {selectedPkg === p.id && <Check size={18} style={{ color: p.teks }} />}
+                {selectedPkg === p.id && (
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.25)]">
+                    <Check size={14} strokeWidth={3} className="text-white" />
+                  </span>
+                )}
               </div>
               <div className="font-serif italic text-xl mb-4" style={{ color: p.teks }}>{p.harga}</div>
               <ul className="space-y-2">
@@ -160,8 +166,15 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
         </motion.div>
 
         {/* Form */}
-        <motion.div {...fadeUp(0.3)}>
-          <form onSubmit={submitPoster} className="bg-card border border-white/10 rounded-3xl p-8">
+        <AnimatePresence>
+          {selectedPkg && (
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 24 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
+          <form onSubmit={submitPoster} className="bg-card border border-white/10 rounded-3xl p-5 md:p-8">
             <div className="mb-6">
               <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Nama / Gereja Mitra <span className="text-red-400">*</span></label>
               <input value={posterNama} onChange={(e) => setPosterNama(e.target.value)} required
@@ -197,7 +210,7 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
               <label className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2 block">Pembayaran</label>
               <div className="flex gap-2 mb-4">
                 <button type="button" onClick={() => setPayMethod("transfer")} className={`flex-1 py-2 text-sm flex items-center justify-center gap-2 rounded-lg border transition-colors ${payMethod === "transfer" ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}><Landmark size={14} /> Transfer</button>
-                <button type="button" onClick={() => setPayMethod("qris")} className={`flex-1 py-2 text-sm flex items-center justify-center gap-2 rounded-lg border transition-colors ${payMethod === "qris" ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}><QrCode size={32} /> QRIS</button>
+                <button type="button" onClick={() => setPayMethod("qris")} className={`flex-1 py-2 text-sm flex items-center justify-center gap-2 rounded-lg border transition-colors ${payMethod === "qris" ? 'bg-white/10 border-white/30' : 'border-white/10 text-white/50 hover:bg-white/5'}`}><QrCode size={14} /> QRIS</button>
               </div>
 
               <div className={`bg-black/50 rounded-lg p-4 text-sm border border-white/5 flex items-center gap-4 ${payMethod === "transfer" ? "flex-col sm:flex-row" : "flex-col"}`}>
@@ -246,6 +259,8 @@ export function PosterForm({ showHeading = true }: { showHeading?: boolean }) {
             </button>
           </form>
         </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
