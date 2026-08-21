@@ -208,15 +208,15 @@ const ScrollingUcapanWall = ({ items }: { items: any[] }) => {
     : items.length > AUTO_SCROLL_THRESHOLD;
   // Mobile has a single column carrying all items, so scale duration with
   // item count to keep per-card pacing steady instead of racing by.
-  const mobileDuration = Math.max(60, items.length * 9);
+  const mobileDuration = Math.max(90, items.length * 14);
 
   return (
     <div className={`relative w-full ${animate ? "h-[560px] md:h-[640px]" : ""}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6 h-full">
-        <MarqueeColumn items={columns[0]} direction="up" duration={isMobile ? mobileDuration : 34} animate={animate} />
-        <MarqueeColumn items={columns[1]} direction="down" duration={40} animate={animate} className="hidden sm:block" />
-        <MarqueeColumn items={columns[2]} direction="up" duration={30} animate={animate} className="hidden lg:block" />
-        <MarqueeColumn items={columns[3]} direction="down" duration={38} animate={animate} className="hidden xl:block" />
+        <MarqueeColumn items={columns[0]} direction="up" duration={isMobile ? mobileDuration : 55} animate={animate} />
+        <MarqueeColumn items={columns[1]} direction="down" duration={64} animate={animate} className="hidden sm:block" />
+        <MarqueeColumn items={columns[2]} direction="up" duration={48} animate={animate} className="hidden lg:block" />
+        <MarqueeColumn items={columns[3]} direction="down" duration={61} animate={animate} className="hidden xl:block" />
       </div>
       {/* Fade top & bottom edges into the page background, only relevant while auto-scrolling */}
       {animate && (
