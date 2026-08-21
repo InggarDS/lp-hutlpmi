@@ -253,6 +253,7 @@ const timeline = [
     year: "1981",
     title: "Film Yesus",
     text: "Film Yesus diterjemahkan ke dalam bahasa Indonesia dan telah menjadi sarana yang efektif untuk memperkenalkan Yesus Kristus sebagai Juruselamat dan Tuhan dan menjadi sarana pertumbuhan Iman Kristen.",
+    image: "/images/sejarah-1981.jpeg",
   },
   {
     year: "1985",
@@ -515,7 +516,7 @@ export default function App() {
               <div className="w-full max-w-md flex flex-col lg:flex-row items-center gap-4">
                 <AddToCalendarButton className="w-full lg:w-auto justify-center" />
                 <a href="#poster" className="w-full lg:w-auto bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold rounded-full px-8 py-3.5 flex items-center justify-center gap-2 whitespace-nowrap hover:opacity-90 transition-opacity">
-                  <Heart size={18} /> Kirim Poster Ucapan
+                  <Heart size={18} /> Kirim Ucapan Digital
                 </a>
               </div>
               <a href="https://forms.gle/hUNjtkpCdQb34oZU6" target="_blank" rel="noopener noreferrer" className="w-full max-w-md border border-[hsl(var(--primary))/0.4] text-[hsl(var(--primary))] font-semibold rounded-full px-8 py-3.5 flex items-center justify-center gap-2 whitespace-nowrap hover:bg-[hsl(var(--primary))/0.1] transition-colors">
